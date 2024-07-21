@@ -1,3 +1,6 @@
+import os
+from dotenv import load_dotenv
+
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, send_from_directory, flash
 from flask_bootstrap import Bootstrap5
 import os
@@ -23,9 +26,13 @@ from datetime import date, datetime
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from sqlalchemy.orm import relationship
 
+load_dotenv() 
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = 'aaaskldfja;lkj;jajaaa111777111aaa'
+app_key = os.getenv('APP_KEY')
+hash_method = os.getenv('HASH')
+salt = int(os.getenv('SALT'))
+app.config['SECRET_KEY'] = app_key
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
 
 # Set up SQLAlchemy
@@ -92,7 +99,7 @@ def register():
         Name = request.form['name']
         Email = request.form['email']
         Password = request.form['password']
-        hashed_password = generate_password_hash(Password, method='pbkdf2:sha256', salt_length=8)
+        hashed_password = generate_password_hash(Password, method=hash_method, salt_length=salt)
         user = User.query.filter_by(email=Email).first() 
         if user :
             flash('You already have ID. Go to Login.')
