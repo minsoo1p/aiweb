@@ -1,0 +1,199 @@
+<!DOCTYPE HTML>
+<!--
+	Prototype by Pixelarity
+	pixelarity.com | hello@pixelarity.com
+	License: pixelarity.com/license
+-->
+<html>
+	<head>
+		<title>AutoAngle</title>
+		<meta charset="utf-8" />
+		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
+		<link rel="stylesheet" href="static/assets/css/main.css" />
+        <script src="https://kit.fontawesome.com/324bf7fdfb.js" crossorigin="anonymous"></script>
+		<style>
+			.upload-container {
+				display: flex;
+				align-items: center;
+				margin-bottom: 10px;
+			}
+	
+			.dropzone {
+				border: 2px dashed #cccccc;
+				border-radius: 8px; /* 모서리가 둥글게 설정 */
+				padding: 20px;
+				width: 50rem;
+				height: 100px;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				text-align: center;
+				margin-right: 10px;
+				font-size: 1rem;
+				color: #888888;
+			}
+
+		</style>
+	</head>
+	<body class="is-preload">
+
+		<!-- Header -->
+			<header id="header">
+				<h1><a href="{{ url_for('main') }}">AutoAngle</a></h1>
+				<a href="#menu">Projects</a>
+			</header>
+
+		<!-- Menu -->
+		<nav id="menu">
+			<ul class="links">
+				<li><a href="{{ url_for('main') }}">Home</a></li>
+				<li><a href="{{ url_for('file') }}">Item One</a></li>
+				<li><a href="{{ url_for('file') }}">Item Two</a></li>
+				<li><a href="{{ url_for('file') }}">Item Three</a></li>
+				<li><a href="{{ url_for('file') }}">Item Four</a></li>
+				<li><a href="{{ url_for('file') }}">Item Five</a></li>
+			</ul>
+			<ul class="actions stacked">
+				<li><a href="{{ url_for('logout') }}" class="button primary fit">Logout</a></li>
+			</ul>
+		</nav>
+
+		<!-- Main -->
+        <section style="padding: 8rem;">
+            <h2>User's Ongoing Files</h2>
+            <br>
+            <div class="table-wrapper">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 2rem;"></th>
+                            <th>Location</th>
+                            <th>Type</th>
+							<th>Number of Images</th>
+							<th>Last Updated</th>
+                            <th style="width: 2rem;"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><i class="fa-solid fa-square-minus"></i></td>
+                            <td>Foot</td>
+                            <td>AP</td>
+							<td>100</td>
+                            <td>2024.07.11</td>
+                            <td style="text-align: right;"><a href="{{ url_for('processing') }}" class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
+                        </tr>
+                        <tr>
+                            <td><i class="fa-solid fa-square-minus"></i></td>
+                            <td>Foot</td>
+                            <td>Lateral</td>
+							<td>98</td>
+                            <td>2024.07.11</td>
+                            <td style="text-align: right;"><a href="{{ url_for('processing') }}" class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
+                        </tr>
+                    </tbody>
+                </table>
+
+				<br>
+				<br>
+				<br>
+				<h2>Adding New Files</h2>
+                <form method="post" action="#">
+
+					<div class="container">
+						<div class="row">
+							<div class="col-3 col-12-xsmall">
+								<select name="demo-category" id="demo-category" >
+									<option value="">Location</option>
+									<option value="1">Foot</option>
+									<option value="1">Ankle</option>
+									<option value="1">Knee</option>
+									<option value="1">Hip</option>
+									<option value="1">Shoulder</option>
+									<option value="1">Elbow</option>
+									<option value="1">Wrist</option>
+									<option value="1">Spine</option>
+								</select>
+							</div>
+							<div class="col-3 col-12-xsmall">
+								<select name="demo-category" id="demo-category">
+									<option value="">Type Of Image</option>
+									<option value="1">AnteroPosterior</option>
+									<option value="1">Lateral</option>
+									<option value="1">Whole Lower Extremity (BellThombson)</option>
+									<option value="1">Whole Spine AnteroPosterior</option>
+									<option value="1">Whole Spine Lateral</option>
+								</select>
+							</div>
+						</div>	
+
+						<div class="row" style="padding-top: 0.7rem;">
+							<div class="col-6">
+								<div id="dropzone" class="dropzone">
+									파일을 마우스로 끌어 오세요
+								</div>
+							</div>
+							<div class="col-2 col-12-xsmall" style="display: flex; flex-direction: column; justify-content: flex-end;">
+								<input type="file" name="demo-file" id="demo-file" accept="image/*" />
+							</div>
+							<div class="col-1 col-12-xsmall">
+
+							</div>
+							<div class="col-3 col-12-xsmall" style="display: flex; flex-direction: column; justify-content: flex-end;">
+								<a href="{{ url_for('processing') }}" class="button primary icon solid fa-download">Upload Files</a>
+							</div>
+						</div>
+
+					</div>
+
+
+                </form>
+				<!-- <div class="container">
+					<div class="row" style="display: flex;">
+						<div class="col-5" id="dropzone" class="dropzone">
+							Drag and drop images here
+						</div>
+						<div class="col-5">
+							<input type="file" name="demo-file" id="demo-file" accept="image/*" />
+						</div>
+					</div>
+				</div> -->
+            </div>
+        </section>
+
+		<!-- Footer -->
+			<footer id="footer">
+				<div class="inner">
+					<ul class="icons">
+						<li><a href="#" class="icon brands fa-twitter"><span class="label">Twitter</span></a></li>
+						<li><a href="#" class="icon brands fa-facebook-f"><span class="label">Facebook</span></a></li>
+						<li><a href="#" class="icon brands fa-instagram"><span class="label">Instagram</span></a></li>
+						<li><a href="#" class="icon brands fa-github"><span class="label">GitHub</span></a></li>
+						<li><a href="#" class="icon brands fa-linkedin-in"><span class="label">LinkedIn</span></a></li>
+						<li><a href="#" class="icon solid fa-envelope"><span class="label">Envelope</span></a></li>
+					</ul>
+					<ul class="contact">
+						<li>12345 Somewhere Road</li>
+						<li>Nashville, TN 00000</li>
+						<li>(000) 000-0000</li>
+					</ul>
+					<ul class="links">
+						<li><a href="#">FAQ</a></li>
+						<li><a href="#">Support</a></li>
+						<li><a href="#">Terms</a></li>
+						<li><a href="#">Contact</a></li>
+					</ul>
+					<p class="copyright">&copy; Untitled. All rights reserved. Lorem ipsum dolor.</p>
+				</div>
+			</footer>
+
+		<!-- Scripts -->
+			<script src="static/assets/js/jquery.min.js"></script>
+			<script src="static/assets/js/jquery.scrollex.min.js"></script>
+			<script src="static/assets/js/browser.min.js"></script>
+			<script src="static/assets/js/breakpoints.min.js"></script>
+			<script src="static/assets/js/util.js"></script>
+			<script src="static/assets/js/main.js"></script>
+
+	</body>
+</html>
