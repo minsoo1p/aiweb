@@ -9,7 +9,6 @@
 		<title>AutoAngle</title>
 		<meta charset="utf-8" />
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
-		<link rel="stylesheet" href="static/assets/css/main.css" />
         <script src="https://kit.fontawesome.com/324bf7fdfb.js" crossorigin="anonymous"></script>
 		<style>
 			.upload-container {
@@ -32,8 +31,8 @@
 				font-size: 1rem;
 				color: #888888;
 			}
-
 		</style>
+		<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main.css') }}" />
 	</head>
 	<body class="is-preload">
 
@@ -47,11 +46,9 @@
 		<nav id="menu">
 			<ul class="links">
 				<li><a href="{{ url_for('main') }}">Home</a></li>
-				<li><a href="{{ url_for('file') }}">Item One</a></li>
-				<li><a href="{{ url_for('file') }}">Item Two</a></li>
-				<li><a href="{{ url_for('file') }}">Item Three</a></li>
-				<li><a href="{{ url_for('file') }}">Item Four</a></li>
-				<li><a href="{{ url_for('file') }}">Item Five</a></li>
+				{% for project in projects%}
+				<li><a href="{{ url_for('file', project_number=project.id) }}">{{ project.name }}</a></li>
+				{% endfor %}
 			</ul>
 			<ul class="actions stacked">
 				<li><a href="{{ url_for('logout') }}" class="button primary fit">Logout</a></li>
@@ -60,7 +57,7 @@
 
 		<!-- Main -->
         <section style="padding: 8rem;">
-            <h2>User's Ongoing Files</h2>
+            <h2>{{ current_user.name }}'s Ongoing Files</h2>
             <br>
             <div class="table-wrapper">
                 <table>
@@ -75,22 +72,16 @@
                         </tr>
                     </thead>
                     <tbody>
+						{% for file in files %}
                         <tr>
-                            <td><i class="fa-solid fa-square-minus"></i></td>
-                            <td>Foot</td>
-                            <td>AP</td>
-							<td>100</td>
-                            <td>2024.07.11</td>
+                            <td><a href="{{ url_for('delete_file', project_number=project_id, file_id=file.id) }}" class="fa-solid fa-square-minus"></a></td>
+                            <td>{{ file.name1 }}</td>
+                            <td>{{ file.name2 }}</td>
+							<td>{{ file.image_number }}</td>
+                            <td>{{ file.file_time }}</td>
                             <td style="text-align: right;"><a href="{{ url_for('processing') }}" class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
                         </tr>
-                        <tr>
-                            <td><i class="fa-solid fa-square-minus"></i></td>
-                            <td>Foot</td>
-                            <td>Lateral</td>
-							<td>98</td>
-                            <td>2024.07.11</td>
-                            <td style="text-align: right;"><a href="{{ url_for('processing') }}" class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
-                        </tr>
+						{% endfor %}
                     </tbody>
                 </table>
 
@@ -98,35 +89,38 @@
 				<br>
 				<br>
 				<h2>Adding New Files</h2>
-                <form method="post" action="#">
-
+				<form method="POST" action="{{ url_for('file', project_number=project_id) }}" enctype="multipart/form-data">
 					<div class="container">
 						<div class="row">
 							<div class="col-3 col-12-xsmall">
-								<select name="demo-category" id="demo-category" >
+								<select name="location" id="location">
 									<option value="">Location</option>
 									<option value="1">Foot</option>
-									<option value="1">Ankle</option>
-									<option value="1">Knee</option>
-									<option value="1">Hip</option>
-									<option value="1">Shoulder</option>
-									<option value="1">Elbow</option>
-									<option value="1">Wrist</option>
-									<option value="1">Spine</option>
+									<option value="2">Ankle</option>
+									<option value="3">Knee</option>
+									<option value="4">Hip</option>
+									<option value="5">Shoulder</option>
+									<option value="6">Elbow</option>
+									<option value="7">Wrist</option>
+									<option value="8">Spine</option>
 								</select>
 							</div>
+		
 							<div class="col-3 col-12-xsmall">
-								<select name="demo-category" id="demo-category">
+								<select name="view" id="view">
 									<option value="">Type Of Image</option>
 									<option value="1">AnteroPosterior</option>
-									<option value="1">Lateral</option>
-									<option value="1">Whole Lower Extremity (BellThombson)</option>
-									<option value="1">Whole Spine AnteroPosterior</option>
-									<option value="1">Whole Spine Lateral</option>
+									<option value="2">Lateral</option>
+									<option value="3">Translateral</option>
+									<option value="4">Skyline View</option>
+									<option value="5">Scapula Y View</option>
+									<option value="6">Whole Lower Extremity (BellThombson)</option>
+									<option value="7">Whole Spine AnteroPosterior</option>
+									<option value="8">Whole Spine Lateral</option>
 								</select>
 							</div>
 						</div>	
-
+		
 						<div class="row" style="padding-top: 0.7rem;">
 							<div class="col-6">
 								<div id="dropzone" class="dropzone">
@@ -134,20 +128,17 @@
 								</div>
 							</div>
 							<div class="col-2 col-12-xsmall" style="display: flex; flex-direction: column; justify-content: flex-end;">
-								<input type="file" name="demo-file" id="demo-file" accept="image/*" />
+								<input type="file" name="files[]" id="file-input" accept="image/*" multiple />
 							</div>
 							<div class="col-1 col-12-xsmall">
-
+			
 							</div>
 							<div class="col-3 col-12-xsmall" style="display: flex; flex-direction: column; justify-content: flex-end;">
-								<a href="{{ url_for('processing') }}" class="button primary icon solid fa-download">Upload Files</a>
+								<button type="submit" class="button primary icon solid fa-download">Upload Files</button>
 							</div>
 						</div>
-
 					</div>
-
-
-                </form>
+				</form>
 				<!-- <div class="container">
 					<div class="row" style="display: flex;">
 						<div class="col-5" id="dropzone" class="dropzone">
@@ -188,12 +179,41 @@
 			</footer>
 
 		<!-- Scripts -->
-			<script src="static/assets/js/jquery.min.js"></script>
-			<script src="static/assets/js/jquery.scrollex.min.js"></script>
-			<script src="static/assets/js/browser.min.js"></script>
-			<script src="static/assets/js/breakpoints.min.js"></script>
-			<script src="static/assets/js/util.js"></script>
-			<script src="static/assets/js/main.js"></script>
+		<script>
+			// JavaScript for handling drag and drop
+			const dropzone = document.getElementById('dropzone');
+			const fileInput = document.getElementById('file-input');
+	
+			dropzone.addEventListener('dragover', (e) => {
+				e.preventDefault();
+				dropzone.classList.add('dragover');
+			});
+	
+			dropzone.addEventListener('dragleave', () => {
+				dropzone.classList.remove('dragover');
+			});
+	
+			dropzone.addEventListener('drop', (e) => {
+				e.preventDefault();
+				dropzone.classList.remove('dragover');
+				fileInput.files = e.dataTransfer.files;
+			});
+	
+			document.getElementById('upload-form').addEventListener('submit', (e) => {
+				if (fileInput.files.length === 0) {
+					e.preventDefault();
+					alert('Please select at least one file.');
+				}
+			});
+		</script>
+
+		<script src="{{ url_for('static', filename='assets/js/jquery.min.js') }}"></script>
+		<script src="{{ url_for('static', filename='assets/js/jquery.scrollex.min.js') }}"></script>
+		<script src="{{ url_for('static', filename='assets/js/browser.min.js') }}"></script>
+		<script src="{{ url_for('static', filename='assets/js/breakpoints.min.js') }}"></script>
+		<script src="{{ url_for('static', filename='assets/js/util.js') }}"></script>
+		<script src="{{ url_for('static', filename='assets/js/main.js') }}"></script>
+
 
 	</body>
 </html>

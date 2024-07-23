@@ -1,5 +1,6 @@
-import os
+from datetime import datetime
 
-# 모든 환경 변수 출력
-for key, value in os.environ.items():
-    print(f"{key}: {value}")
+now = datetime.now()
+current_date = now.strftime("%Y-%m-%d")
+
+print("Current Date:", current_date)

@@ -24,11 +24,9 @@
 			<nav id="menu">
 				<ul class="links">
 					<li><a href="{{ url_for('main') }}">Home</a></li>
-					<li><a href="{{ url_for('file') }}">Item One</a></li>
-					<li><a href="{{ url_for('file') }}">Item Two</a></li>
-                    <li><a href="{{ url_for('file') }}">Item Three</a></li>
-                    <li><a href="{{ url_for('file') }}">Item Four</a></li>
-                    <li><a href="{{ url_for('file') }}">Item Five</a></li>
+					{% for project in projects%}
+					<li><a href="{{ url_for('file', project_number=project.id) }}">{{ project.name }}</a></li>
+					{% endfor %}
 				</ul>
 				<ul class="actions stacked">
 					<li><a href="{{ url_for('logout') }}" class="button primary fit">Logout</a></li>
@@ -37,7 +35,7 @@
 
 		<!-- Main -->
         <section style="padding: 8rem;">
-            <h2>User's Ongoing Projects</h2>
+            <h2>{{ current_user.name }}'s Ongoing Projects</h2>
             <br>
             <div class="table-wrapper">
                 <table>
@@ -46,46 +44,21 @@
                             <th style="width: 2rem;"></th>
                             <th>Name</th>
                             <th>Description</th>
-                            <th>Last Updated</th>
+                            <th>Creating Date</th>
                             <th style="width: 2rem;"></th>
                         </tr>
                     </thead>
+
                     <tbody>
-                        <tr>
-                            <td><i class="fa-solid fa-square-minus"></i></td>
-                            <td>Item One</td>
-                            <td>Ante turpis integer aliquet porttitor.</td>
-                            <td>2024.07.11</td>
-                            <td><a href='{{ url_for('file') }}' class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
-                        </tr>
-                        <tr>
-                            <td><i class="fa-solid fa-square-minus"></i></td>
-                            <td>Item Two</td>
-                            <td>Vis ac commodo adipiscing arcu aliquet.</td>
-                            <td>2024.07.11</td>
-                            <td><a href='{{ url_for('file') }}' class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
-                        </tr>
-                        <tr>
-                            <td><i class="fa-solid fa-square-minus"></i></td>
-                            <td>Item Three</td>
-                            <td> Morbi faucibus arcu accumsan lorem.</td>
-                            <td>2024.07.11</td>
-                            <td><a href='{{ url_for('file') }}' class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
-                        </tr>
-                        <tr>
-                            <td><i class="fa-solid fa-square-minus"></i></td>
-                            <td>Item Four</td>
-                            <td>Vitae integer tempus condimentum.</td>
-                            <td>2024.07.11</td>
-                            <td><a href='{{ url_for('file') }}' class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
-                        </tr>
-                        <tr>
-                            <td><i class="fa-solid fa-square-minus"></i></td>
-                            <td>Item Five</td>
-                            <td>Ante turpis integer aliquet porttitor.</td>
-                            <td>2024.07.11</td>
-                            <td><a href='{{ url_for('file') }}' class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
-                        </tr>
+                        {% for project in projects %}
+                            <tr>
+                                <td><a href="{{ url_for('delete_project', project_id=project.id) }}" class="fa-solid fa-square-minus"></a></td>
+                                <td>{{ project.name }}</td>
+                                <td>{{ project.description }}</td>
+                                <td>{{ project.project_time }}</td>
+                                <td><a href='{{ url_for('file', project_number=project.id) }}' class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
+                            </tr>
+                        {% endfor %}
                     </tbody>
                 </table>
                 <br>
@@ -93,15 +66,15 @@
                 <form method="post" action="#">
                     <div class="row gtr-uniform">
                         <div class="col-4 col-12-xsmall">
-                            <input type="text" name="demo-name" id="demo-name" placeholder="Name" style="height: 4rem;"/>
+                            <input type="text" name="project-name" id="project-name" placeholder="Name" style="height: 4rem;"/>
                         </div>
                         <div class="col-6 col-12-xsmall">
-                            <input type="email" name="demo-email" id="demo-email" placeholder="Description" style="height: 4rem;"/>
+                            <input type="text" name="project-description" id="project-description" placeholder="Description" style="height: 4rem;" required/>
                         </div>
                         <div class="col-2 col-12-xsmall">
-                            <ul class="actions fit small">
-                                <li><a href="#" class="button primary fit small">Add project</a></li>
-                            </ul>
+                            <button type="submit" class="button primary fit small">
+                                Add Project
+                            </button>
                         </div>
                 </form>
 
