@@ -21,19 +21,22 @@
 
 			<nav id="menu">
 				<ul class="links">
-					<li><a href="{{ url_for('main') }}">Home</a></li>
+					<li><a href="{{ url_for('main') }}">AutoAngle</a></li>
 					<li><a href="{{ url_for('info') }}">Usage Information</a></li>
 					<li><a href=" {{ url_for('article') }} ">Related Article</a></li>
-					{% if current_user.is_authenticated %}
-						<li><a href=" {{ url_for('project') }} ">{{ current_user.name }}'s projects</a></li>
-					{% else %}
-					{% endif %}
+
 				</ul>
 				<!-- <ul class="links">
 					<li><a href="{{ url_for('main') }}">Halux valgus</a></li>
 					<li><a href="{{ url_for('info') }}">Pesplanus</a></li>
 					<li><a href=" {{ url_for('article') }} ">Prolia</a></li>
 				</ul> -->
+				{% if current_user.is_authenticated %}
+				<ul class="actions stacked">
+					<li><a href="{{ url_for('project') }}" class="button secondary fit">Project Start</a></li>
+					<p></p>
+				{% else %}
+				{% endif %}
 				<ul class="actions stacked">
 					{% if current_user.is_authenticated %}
 						<li><a href="{{ url_for('logout') }}" class="button primary fit">Logout</a></li>
@@ -48,8 +51,8 @@
 			<section id="banner">
 				<div class="inner">
 					<div class="content">
-						<h2>Sed feugiat amet adipiscing</h2>
-						<p>Amet tincidunt arcu suspendisse consequat</p>
+						<h2>AutoAngle</h2>
+						<p>AI-Driven fully automated service for Precise Orthopedic X-ray image Analysis</p>
 					</div>
 					<ul class="actions stacked">
 						{% if current_user.is_authenticated %}
@@ -66,11 +69,13 @@
 			<section id="one" class="wrapper style1 split">
 				<div class="inner">
 					<div class="content">
-						<h2>Lorem ipsum accumsan nisl feugiat<br />
-						sed consequat adipiscing</h2>
-						<p>Amet lorem vivamus viverra, quis semper consequat, sem nibh mattis arcu, dolore porttitor lorem justo in tellus. Aenean lacinia felis et dui viverra, nec accumsan et quam ultricies. Phasellus sapien lorem, rhoncus ultricies.</p>
+						<h2>AutoAngle<br />
+						Foot X-ray analysis</h2>
+						<p>AutoAngle revolutionizes Orthopedics by providing Deep learning-based fully automated x-ray image analysis. 
+							Our service precisely calculates critical angles needed for diagnosing various diseases, including Halus valgus simplifying the physician's workflow. 
+							Experience enhanced accuracy and efficiency in orthopedic diagnostics with AutoAngle.</p>
 						<ul class="actions">
-							<li><a href="#" class="button">Our Story</a></li>
+							<li><a href="{{ url_for('info') }}" class="button">More Info</a></li>
 						</ul>
 					</div>
 					<div class="image-circles">
@@ -90,45 +95,34 @@
 			<section id="two" class="wrapper style2">
 				<div class="inner">
 					<header class="major">
-						<h2>Gravida nunc accumsan</h2>
-						<p>Ipsum quis semper consequat, sem nibh mattis arcu, quis porttitor lorem justo in tellus. Aenean lacinia<br />
-						interdum nisl felis et dui viverra, nec accumsan tempus quam ultricies.</p>
+						<h2>Key features</h2>
+						<p>AutoAngle boasts a diverse array of key features designed to streamline and enhance orthopedic imaging analysis for medical professionals.</p>
 					</header>
 					<div class="features">
 						<section>
 							<span class="icon solid major fa-tag"></span>
-							<h3>Quam adipiscing</h3>
-							<p>Feugiat lorem quis semper consequat, sem nibh mattis arcu, amet porttitor lorem justo in cumsan quam ultricies magna tempus.</p>
+							<h3>Labor-free</h3>
+							<p>AutoAngle's fully automated system eliminates manual intervention, reducing physician workload and minimizing human error.</p>
 						</section>
 						<section>
 							<span class="icon solid major fa-camera-retro"></span>
-							<h3>Semper accumsan</h3>
-							<p>Feugiat lorem quis semper consequat, sem nibh mattis arcu, amet porttitor lorem justo in cumsan quam ultricies magna tempus.</p>
+							<h3>Accuracy</h3>
+							<p>Advanced AI algorithms ensure precise measurement of angles, enhancing diagnostic quality and treatment planning.</p>
 						</section>
 						<section>
 							<span class="icon solid major fa-cloud"></span>
-							<h3>Ipsum lorem magna</h3>
-							<p>Feugiat lorem quis semper consequat, sem nibh mattis arcu, amet porttitor lorem justo in cumsan quam ultricies magna tempus.</p>
+							<h3>Data Management</h3>
+							<p>Securely stores and organizes x-ray images and analysis results, providing easy access, data export capabilities</p>
 						</section>
 						<section>
 							<span class="icon solid major fa-cube"></span>
-							<h3>Tempus sed mattis</h3>
-							<p>Feugiat lorem quis semper consequat, sem nibh mattis arcu, amet porttitor lorem justo in cumsan quam ultricies magna tempus.</p>
-						</section>
-						<section>
-							<span class="icon solid major fa-file-alt"></span>
-							<h3>Odio fermentum</h3>
-							<p>Feugiat lorem quis semper consequat, sem nibh mattis arcu, amet porttitor lorem justo in cumsan quam ultricies magna tempus.</p>
-						</section>
-						<section>
-							<span class="icon solid major fa-plane"></span>
-							<h3>Risus et interdum</h3>
-							<p>Feugiat lorem quis semper consequat, sem nibh mattis arcu, amet porttitor lorem justo in cumsan quam ultricies magna tempus.</p>
+							<h3>Scalability</h3>
+							<p>Versatile enough to be applied to various patients, ensuring efficient service delivery across different clinical scenarios.</p>
 						</section>
 					</div>
 					<footer class="major">
 						<ul class="actions special">
-							<li><a href="#" class="button major">More Features</a></li>
+							<li><a href="{{ url_for('info') }}" class="button major">More Info</a></li>
 						</ul>
 					</footer>
 				</div>
@@ -139,24 +133,27 @@
 				<div class="inner">
 					<div class="spotlights">
 						<section>
-							<span class="image"><img src="static/images/pic05.jpg" alt="" /></span>
+							<span class="image"><img src="static/images/foot_img01.png" alt="" /></span>
 							<div class="content">
-								<h2>Convallis integer iaculis</h2>
-								<p>Donec elementum odio ut suscipit congue. Fusce magna mattis vel fermentum, ultricies et velit. Suspendisse viverra, ante in eleifend vulputate, lacus lorem pretium ligula, tincidunt posuere sapien neque a augue. Pellentesque habitant morbi tristique senectus et netus et malesuada.</p>
+								<h2>Initial diagnosis</h2>
+								<p>AutoAngle aids in the initial diagnosis by providing precise measurements of critical angles in x-ray images, helping physicians identify orthopedic conditions accurately. 
+									Its automated analysis reduces the time needed for diagnosis, allowing for quicker patient care decisions.</p>
 							</div>
 						</section>
 						<section>
-							<span class="image"><img src="static/images/pic06.jpg" alt="" /></span>
+							<span class="image"><img src="static/images/foot_img02.jpg" alt="" /></span>
 							<div class="content">
-								<h2>Ultrices augue faucibus</h2>
-								<p>Donec elementum odio ut suscipit congue. Fusce magna mattis vel fermentum, ultricies et velit. Suspendisse viverra, ante in eleifend vulputate, lacus lorem pretium ligula, tincidunt posuere sapien neque a augue. Pellentesque habitant morbi tristique senectus et netus et malesuada.</p>
+								<h2>Serial follow-up</h2>
+								<p>For outpatient management, AutoAngle facilitates serial follow-up by consistently tracking and comparing changes in x-ray images over time. 
+									This ensures that physicians can monitor disease progression or recovery with reliable, repeatable accuracy.</p>
 							</div>
 						</section>
 						<section>
-							<span class="image"><img src="static/images/pic07.jpg" alt="" /></span>
+							<span class="image"><img src="static/images/foot_img03.png" alt="" /></span>
 							<div class="content">
-								<h2>Integer sed sodales</h2>
-								<p>Donec elementum odio ut suscipit congue. Fusce magna mattis vel fermentum, ultricies et velit. Suspendisse viverra, ante in eleifend vulputate, lacus lorem pretium ligula, tincidunt posuere sapien neque a augue. Pellentesque habitant morbi tristique senectus et netus et malesuada.</p>
+								<h2>Postoperative evaluation</h2>
+								<p>After surgery, AutoAngle offers valuable insights during postoperative evaluations by accurately assessing the alignment of bones. 
+									This enables physicians to make informed decisions about patient recovery and any necessary further interventions.</p>
 							</div>
 						</section>
 					</div>
@@ -167,9 +164,8 @@
 			<section id="four" class="wrapper style2 special">
 				<div class="inner">
 					<header>
-						<h2>Sed vitae massa curabitur</h2>
-						<p>Ipsum quis semper consequat, sem nibh mattis arcu, quis porttitor lorem justo in tellus. Aenean lacinia<br />
-						interdum nisl felis et dui viverra, nec accumsan tempus quam ultricies.</p>
+						<h2>Unlock the Future of Orthopedic Imaging Analysis</h2>
+						<p>Discover the power of precision and automation with AutoAngle. <br/>Click the button below to begin transforming your diagnostic process and improving patient outcomes.</p>
 					</header>
 					<ul class="actions special">
 						{% if current_user.is_authenticated %}

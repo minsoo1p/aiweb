@@ -22,19 +22,22 @@
 		<!-- Menu -->
 		<nav id="menu">
 			<ul class="links">
-				<li><a href="{{ url_for('main') }}">Home</a></li>
+				<li><a href="{{ url_for('main') }}">AutoAngle</a></li>
 				<li><a href="{{ url_for('info') }}">Usage Information</a></li>
 				<li><a href=" {{ url_for('article') }} ">Related Article</a></li>
-				{% if current_user.is_authenticated %}
-					<li><a href=" {{ url_for('project') }} ">{{ current_user.name }}'s projects</a></li>
-				{% else %}
-				{% endif %}
+
 			</ul>
 			<!-- <ul class="links">
 				<li><a href="{{ url_for('main') }}">Halux valgus</a></li>
 				<li><a href="{{ url_for('info') }}">Pesplanus</a></li>
 				<li><a href=" {{ url_for('article') }} ">Prolia</a></li>
 			</ul> -->
+			{% if current_user.is_authenticated %}
+			<ul class="actions stacked">
+				<li><a href="{{ url_for('project') }}" class="button secondary fit">Project Start</a></li>
+				<p></p>
+			{% else %}
+			{% endif %}
 			<ul class="actions stacked">
 				{% if current_user.is_authenticated %}
 					<li><a href="{{ url_for('logout') }}" class="button primary fit">Logout</a></li>
@@ -48,8 +51,8 @@
 		<!-- Main -->
 			<section id="main" class="wrapper">
 				<header>
-					<h2>Elements</h2>
-					<p>Lorem justo in tellus aenean lacinia felis.</p>
+					<h2>Related Article</h2>
+					<p>Articles related to AutoAngle service</p>
 				</header>
 				<div class="inner">
 

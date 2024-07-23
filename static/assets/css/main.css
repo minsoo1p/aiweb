@@ -1935,6 +1935,17 @@ input, select, textarea {
 				.button.primary:hover:active {
 					background-color: #3998d3;
 				}
+		
+		/* Secondary 버튼 스타일 */
+		input[type="submit"].secondary,
+		input[type="reset"].secondary,
+		input[type="button"].secondary,
+		button.secondary,
+		.button.secondary {
+			box-shadow: none;
+			background-color: #ffd700; /* 노란색 배경 */
+			color: #ffffff !important; /* 흰색 글씨 */
+		}
 
 /* Features */
 
@@ -1956,7 +1967,7 @@ input, select, textarea {
 			border-radius: 4px;
 			margin: 1em 0 0 1em;
 			text-align: center;
-			width: calc(33.33333% - 1em);
+			width: calc(50% - 1em);
 		}
 
 		@media screen and (max-width: 1280px) {

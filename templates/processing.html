@@ -11,6 +11,115 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no" />
 		<link rel="stylesheet" href="static/assets/css/main.css" />
         <script src="https://kit.fontawesome.com/324bf7fdfb.js" crossorigin="anonymous"></script>
+		<style>
+			body {
+				font-family: Arial, sans-serif;
+				margin: 0;
+				display: flex;
+				flex-direction: column;
+				height: 100vh;
+			}
+			header, footer {
+				background-color: #333;
+				color: white;
+				text-align: center;
+				padding: 10px 0;
+			}
+			.main {
+				display: flex;
+				flex-grow: 1;
+				width: 100%;
+			}
+			.container {
+				display: flex;
+				width: 100%;
+				flex-grow: 1;
+			}
+			.sidebar {
+				width: 10%;
+				padding: 10px;
+				box-sizing: border-box;
+				border-right: 1px solid #ccc;
+				transition: width 0.3s;
+				display: flex;
+				flex-direction: column;
+				justify-content: space-between;
+			}
+			.sidebar button {
+				width: 100%;
+				padding: 10px;
+			}
+			.file-list {
+				list-style: none;
+				padding: 0;
+				margin: 0;
+			}
+			.file-list li {
+				cursor: pointer;
+				padding: 10px;
+				border-bottom: 1px solid #ccc;
+			}
+			.file-list li:hover {
+				background-color: #f0f0f0;
+			}
+			.middle, .right-sidebar {
+				padding: 10px;
+				box-sizing: border-box;
+				transition: width 0.3s, display 0.3s;
+			}
+			.middle {
+				width: 50%;
+				display: flex;
+				justify-content: center;
+				align-items: center;
+				border-right: 1px solid #ccc;
+			}
+			.middle img {
+				max-width: 100%;
+				max-height: 100%;
+				display: none;
+			}
+			.right-sidebar {
+				width: 40%;
+				display: flex;
+				flex-direction: column;
+				justify-content: flex-start;
+				align-items: flex-start;
+				position: relative;
+			}
+			.right-sidebar input {
+				width: 100%;
+				margin-bottom: 10px;
+				padding: 8px;
+				box-sizing: border-box;
+			}
+			.buttons {
+				display: flex;
+				justify-content: space-between;
+				width: 100%;
+				position: absolute;
+				bottom: 10px;
+			}
+			.buttons button {
+				width: 48%;
+				padding: 10px;
+			}
+			.collapsed .sidebar {
+				width: 100%;
+			}
+			.collapsed .middle, .collapsed .right-sidebar {
+				display: none;
+				width: 0;
+			}
+			.collapsed .export-button {
+				display: block;
+			}
+			.export-button {
+				display: none;
+				margin-top: 10px;
+				padding: 10px;
+			}
+		</style>
 	</head>
 	<body class="is-preload">
 
@@ -36,9 +145,37 @@
 			</nav>
 
 		<!-- Main -->
-        <section style="padding: 8rem;">
-            <h2>Processing</h2>
-            <br>
+		<!-- Main -->
+        <section class="main">
+			<div class="container">
+				<div class="sidebar" id="leftSidebar">
+					<div>
+						<button id="toggleButton" onclick="toggleSidebar()">◀ list</button>
+						<ul class="file-list" id="fileList">
+							<li onclick="showImage('image1.jpg')">File 1</li>
+							<li onclick="showImage('image2.jpg')">File 2</li>
+							<li onclick="showImage('image3.jpg')">File 3</li>
+						</ul>
+						<button class="export-button">Export</button>
+					</div>
+				</div>
+				
+				<div class="middle" id="middleSection">
+					<img id="image1.jpg" src="static/images/foot_img01.png" alt="Image 1">
+					<img id="image2.jpg" src="static/images/foot_img02.jpg" alt="Image 2">
+					<img id="image3.jpg" src="static/images/foot_img03.png" alt="Image 3">
+				</div>
+				
+				<div class="right-sidebar" id="rightSidebar">
+					<input type="text" placeholder="TC: __º">
+					<input type="text" placeholder="Calcaneal pitch: __º">
+					<input type="text" placeholder="Meary's angle: __º">
+					<div class="buttons">
+						<button>Confirm</button>
+						<button>Modify</button>
+					</div>
+				</div>
+			</div>
         </section>
 
 		<!-- Footer -->
@@ -74,6 +211,28 @@
 			<script src="static/assets/js/breakpoints.min.js"></script>
 			<script src="static/assets/js/util.js"></script>
 			<script src="static/assets/js/main.js"></script>
-
+			<script>
+				function showImage(imageId) {
+					// Hide all images
+					document.querySelectorAll('.middle img').forEach(img => {
+						img.style.display = 'none';
+					});
+					// Show the selected image
+					document.getElementById(imageId).style.display = 'block';
+					// Ensure middle and right sidebar are visible
+					document.body.classList.remove('collapsed');
+				}
+			
+				function toggleSidebar() {
+					document.body.classList.toggle('collapsed');
+					// Toggle the display of the export button
+					const exportButton = document.querySelector('.export-button');
+					if (document.body.classList.contains('collapsed')) {
+						exportButton.style.display = 'block';
+					} else {
+						exportButton.style.display = 'none';
+					}
+				}
+			</script>
 	</body>
 </html>

@@ -22,19 +22,22 @@
 		<!-- Menu -->
 		<nav id="menu">
 			<ul class="links">
-				<li><a href="{{ url_for('main') }}">Home</a></li>
+				<li><a href="{{ url_for('main') }}">AutoAngle</a></li>
 				<li><a href="{{ url_for('info') }}">Usage Information</a></li>
 				<li><a href=" {{ url_for('article') }} ">Related Article</a></li>
-				{% if current_user.is_authenticated %}
-					<li><a href=" {{ url_for('project') }} ">{{ current_user.name }}'s projects</a></li>
-				{% else %}
-				{% endif %}
+
 			</ul>
 			<!-- <ul class="links">
 				<li><a href="{{ url_for('main') }}">Halux valgus</a></li>
 				<li><a href="{{ url_for('info') }}">Pesplanus</a></li>
 				<li><a href=" {{ url_for('article') }} ">Prolia</a></li>
 			</ul> -->
+			{% if current_user.is_authenticated %}
+			<ul class="actions stacked">
+				<li><a href="{{ url_for('project') }}" class="button secondary fit">Project Start</a></li>
+				<p></p>
+			{% else %}
+			{% endif %}
 			<ul class="actions stacked">
 				{% if current_user.is_authenticated %}
 					<li><a href="{{ url_for('logout') }}" class="button primary fit">Logout</a></li>
@@ -48,24 +51,40 @@
 		<!-- Main -->
 			<section id="main" class="wrapper">
 				<header>
-					<h2>Generic</h2>
-					<p>Lorem justo in tellus aenean lacinia felis.</p>
-				</header>
+					<h2>Information</h2>
+					<p>Learn about the innovative journey behind AutoAngle and discover how to seamlessly integrate it into your orthopedic imaging workflow.</p>
+				</header> 
 				<div class="inner">
-					<span class="image left"><img src="images/pic08.jpg" alt="" /></span>
-					<p>Aliquam massa urna, imperdiet sit amet mi non, bibendum euismod est. Curabitur mi justo, tincidunt vel etiam ullamcorper, porta cursus justo. Cras vel neque lorem. Vestibulum diam quam, mollis at magna consectetur non, malesuada quis augue. Morbi tincidunt pretium interdum est. Curabitur mi justo, tincidunt vel feugiat ullamcorper, porta cursus justo. Cras vel neque tempus. Vestibulum diam. Fusce fringilla pellentesque bibendum. Cras nec tristique diam. Nullam blandit fringilla justo. Ut at ex lorem. Aenean pellentesque mollis urna nec pharetra. Vivamus vel tellus sed elit porta lobortis. Praesent justo nisl, maximus in congue in, commodo eget adipiscing.</p>
-					<p>Vestibulum diam quam, mollis at consectetur non, malesuada quis augue. Morbi tincidunt pretium interdum. Morbi mattis elementum orci, nec dictum porta cursus justo. Quisque ultricies lorem in ligula condimentum, et egestas turpis sagittis. Cras ac nunc urna. Nullam eget lobortis purus. Phasellus vitae tortor non est placerat tristique. In convallis dapibus diam sed lacinia. Praesent sagittis sagittis justo, at congue erat mattis ac. Donec sed aliquam nulla, interdum commodo urna. Fusce mattis, metus et tristique consequat, ipsum etiam blandit arcu, at egestas sem nulla a libero. Proin et faucibus libero. Suspendisse ultrices ex sed. Praesent sagittis sagittis justo, at congue erat mattis ac. Donec sed aliquam nulla, interdum commodo urna. Fusce mattis, metus et tristique consequat, ipsum etiam blandit arcu, at egestas sem nulla a libero. Proin et faucibus libero. Suspendisse ultrices ex sed. Lorem ipsum dolor sit amet consequat etiam dolore.</p>
+					<p>AutoAngle was born out of a collaborative project at a bootcamp hosted by the Research of Doctor Physician Programmers under KoSAIM. This project brought together medical students and specialists, forming a team dedicated to advancing orthopedic imaging analysis through technology and innovation.</p>
+					<p>Using cutting-edge computer vision and deep learning techniques, the team trained the system to accurately measure critical angles in x-ray images. This process involved developing a proprietary algorithm capable of delivering precise and reliable results, revolutionizing the way orthopedic conditions are diagnosed and managed.</p>
 					<hr />
-					<h3>Sed magna ornare ultricies</h3>
-					<p>In vestibulum massa quis arcu lobortis tempus. Nam pretium arcu in odio vulputate luctus. Suspendisse euismod lorem eget lacinia fringilla. Sed sed felis justo. Nunc sodales elit in laoreet aliquam. Nam gravida, nisl sit amet iaculis porttitor, risus nisi rutrum metus.</p>
-					<p>Praesent iaculis, nulla ac aliquam cursus, augue odio congue quam, pretium aliquam risus dui sed libero. Aliquam eget cursus turpis. Quisque tincidunt convallis pharetra. In convallis dapibus diam sed lacinia. Praesent sagittis sagittis justo, at congue erat mattis ac. Donec sed aliquam nulla, interdum commodo urna. Fusce mattis, metus et tristique consequat, ipsum etiam blandit arcu, at egestas sem nulla a libero. Proin et faucibus libero. Suspendisse ultrices ex sed leo convallis, id vestibulum diam volutpat. Donec imperdiet ultricies orci, nec ultricies ligula sodales suscipit. Pellentesque quis ipsum augue. Fusce a nisi a ex congue eleifend. Mauris elit neque, consequat ac magna in, dapibus iaculis lectus. In convallis dapibus diam sed lacinia. Praesent sagittis sagittis justo, at congue erat mattis ac. Donec sed aliquam nulla, interdum commodo urna. Fusce mattis, metus et tristique consequat, ipsum etiam blandit arcu, at egestas sem nulla a libero.</p>
-					<ul>
-						<li>Faucibus orci lobortis ac adipiscing integer.</li>
-						<li>Col accumsan arcu mi aliquet placerat.</li>
-						<li>Lobortis vestibulum ut magna tempor massa nascetur.</li>
-						<li>Blandit massa non blandit tempor interdum.</li>
-						<li>Lacinia mattis arcu nascetur lobortis.</li>
-					</ul>
+					<h3>User guide</h3>
+					<ol>
+						<li>
+							<span class="step-title">Sign Up and Log In</span>
+							<p>To access the AutoAngle service, you must first sign up and log in.</p>
+						</li>
+						<li>
+							<span class="step-title">Create a Project</span>
+							<p>Start by creating a new project for your analysis.</p>
+						</li>
+						<li>
+							<span class="step-title">Select Site and X-ray Type, Then Upload Files</span>
+							<p>Choose the anatomical site and type of x-ray, then upload the relevant files.</p>
+						</li>
+						<li>
+							<span class="step-title">Enter Processing Mode</span>
+							<p>Enter processing mode to begin analyzing the uploaded files.</p>
+						</li>
+						<li>
+							<span class="step-title">Review and modify Angles for Each Image, Then Confirm</span>
+							<p>Check the measured angles for each x-ray image, make adjustments if necessary, and click the confirm button.</p>
+						</li>
+						<li>
+							<span class="step-title">Export the Data as an Excel File</span>
+							<p>Export the final data in Excel format for your records.</p>
+						</li>
+					</ol>
 				</div>
 			</section>
 
