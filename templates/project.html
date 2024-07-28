@@ -24,7 +24,8 @@
 			<nav id="menu">
 				<ul class="links">
 					<li><a href="{{ url_for('main') }}">Home</a></li>
-					{% for project in projects%}
+					<li><a href="{{ url_for('project') }}">Projects</a></li>
+					{% for project in projects %}
 					<li><a href="{{ url_for('file', project_number=project.id) }}">{{ project.name }}</a></li>
 					{% endfor %}
 				</ul>

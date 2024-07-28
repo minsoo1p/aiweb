@@ -46,8 +46,9 @@
 		<nav id="menu">
 			<ul class="links">
 				<li><a href="{{ url_for('main') }}">Home</a></li>
-				{% for project in projects%}
-				<li><a href="{{ url_for('file', project_number=project.id) }}">{{ project.name }}</a></li>
+				<li><a href="{{ url_for('project') }}">All Projects</a></li>
+				{% for project in projects %}
+				<li><a href="{{ url_for('file', project_number=project_id) }}"> {{ project.name }}</a></li>
 				{% endfor %}
 			</ul>
 			<ul class="actions stacked">
@@ -79,7 +80,7 @@
                             <td>{{ file.name2 }}</td>
 							<td>{{ file.image_number }}</td>
                             <td>{{ file.file_time }}</td>
-                            <td style="text-align: right;"><a href="{{ url_for('processing') }}" class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
+                            <td style="text-align: right;"><a href="{{ url_for('processing', project_id = project_id, file_id = file.id) }}" class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
                         </tr>
 						{% endfor %}
                     </tbody>
@@ -95,28 +96,30 @@
 							<div class="col-3 col-12-xsmall">
 								<select name="location" id="location">
 									<option value="">Location</option>
-									<option value="1">Foot</option>
-									<option value="2">Ankle</option>
-									<option value="3">Knee</option>
-									<option value="4">Hip</option>
-									<option value="5">Shoulder</option>
-									<option value="6">Elbow</option>
-									<option value="7">Wrist</option>
-									<option value="8">Spine</option>
+									<option value="Foot">Foot</option>
+									<option value="Ankle">Ankle</option>
+									<option value="Knee">Knee</option>
+									<option value="Hip">Hip</option>
+									<option value="Shoulder">Shoulder</option>
+									<option value="Elbow">Elbow</option>
+									<option value="Wrist">Wrist</option>
+									<option value="Spine">C-Spine</option>
+									<option value="Spine">T-Spine</option>
+									<option value="Spine">L-Spine</option>
 								</select>
 							</div>
 		
 							<div class="col-3 col-12-xsmall">
 								<select name="view" id="view">
 									<option value="">Type Of Image</option>
-									<option value="1">AnteroPosterior</option>
-									<option value="2">Lateral</option>
-									<option value="3">Translateral</option>
-									<option value="4">Skyline View</option>
-									<option value="5">Scapula Y View</option>
-									<option value="6">Whole Lower Extremity (BellThombson)</option>
-									<option value="7">Whole Spine AnteroPosterior</option>
-									<option value="8">Whole Spine Lateral</option>
+									<option value="AnteroPosterior">AnteroPosterior</option>
+									<option value="Lateral">Lateral</option>
+									<option value="Translateral">Translateral</option>
+									<option value="Skyline View">Skyline View</option>
+									<option value="Scapula Y view">Scapula Y View</option>
+									<option value="Whole Lower Extremity (BellThombson)">Whole Lower Extremity (BellThombson)</option>
+									<option value="Whole Spine AnteroPosterior">Whole Spine AnteroPosterior</option>
+									<option value="Whole spine Lateral">Whole Spine Lateral</option>
 								</select>
 							</div>
 						</div>	

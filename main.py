@@ -1,3 +1,9 @@
+import cv2
+import numpy as np
+from PIL import Image
+import base64
+from io import BytesIO
+
 import os
 import shutil
 from dotenv import load_dotenv
@@ -9,12 +15,7 @@ from datetime import datetime
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, send_from_directory, flash
 from flask_bootstrap import Bootstrap5
 import os
-import calendar
 from datetime import datetime
-from flask_caching import Cache
-from urllib.parse import quote_plus, unquote_plus
-from bs4 import BeautifulSoup
-import requests
 
 from werkzeug.security import generate_password_hash, check_password_hash
 # from sqlalchemy.orm import Mapped, mapped_column
@@ -161,34 +162,27 @@ def project():
 @app.route('/delete_project/<int:project_id>', methods=['GET'])
 @login_required
 def delete_project(project_id):
+    
+    files = File.query.filter_by(project_id=project_id).all()
+    file_ids = []
+    for file in files:
+        file_ids.append(file.id)
+    for file_id in file_ids : 
+        file = File.query.get(file_id)
+        folder_path = os.path.join('static', 'image', file.image_data)
+        if os.path.exists(folder_path):
+            shutil.rmtree(folder_path)
+        else :
+            os.rmdir(folder_path)
+        db.session.delete(file)
+        db.session.commit()
+
     project = Project.query.get(project_id)
     if project:
         db.session.delete(project)
         db.session.commit()
     return redirect(url_for('project'))
 
-location = [
-    '',
-    'Foot',
-    'Ankle',
-    'Knee',
-    'Hip',
-    'Shoulder',
-    'Elbow',
-    'Wrist',
-    'Spine',
-    ]
-view = [
-    '',
-    'AnteroPosterior',
-    'Lateral',
-    'Translateral',
-    'Skyline View',
-    'Scapula Y View',
-    'Whole Lower Extremity (BellThombson)',
-    'Whole Spine AnteroPosterior',
-    'Whole Spine Lateral',
-]
 
 @app.route("/file/<int:project_number>", methods=["GET", "POST"])
 @login_required
@@ -198,8 +192,8 @@ def file(project_number):
     if request.method == "POST":
         now = datetime.now()
         current_date = now.strftime("%Y-%m-%d")
-        Name1 = location[int(request.form.get('location'))]
-        Name2 = view[int(request.form.get('view'))]
+        Name1 = request.form.get('location')
+        Name2 = request.form.get('view')
         images = request.files.getlist('files[]')
         image_number = len(images)
         unique_folder_name = str(uuid.uuid4())
@@ -212,10 +206,10 @@ def file(project_number):
         db.session.add(new_file)
         db.session.commit()
         files = File.query.filter_by(project_id=project_number).all()
-        return render_template('file.html', projects=projects, files=files, project_id=project_number, location=location, view=view)
-    return render_template('file.html', projects=projects, files=files, project_id=project_number, location=location, view=view)
+        return render_template('file.html', projects=projects, files=files, project_id=project_number)
+    return render_template('file.html', projects=projects, files=files, project_id=project_number)
 
-@app.route('/delete_project/<int:project_number>/<int:file_id>', methods=['GET'])
+@app.route('/delete_file/<int:project_number>/<int:file_id>', methods=['GET'])
 @login_required
 def delete_file(project_number, file_id):
     file = File.query.get(file_id)
@@ -261,10 +255,64 @@ def delete_file(project_number, file_id):
 
 '''
 
-@app.route("/processing")
+# # Example usage
+# image_folder = '/content/drive/MyDrive/data/normal'
+# images = load_images(image_folder)
+# if images is not None:
+#     print(f"Loaded {len(images)} images with shape {images.shape}")
+
+
+def resize_and_pad(image, target_size=(512, 512)):
+    h, w = image.shape[:2]
+    scale = target_size[0] / max(h, w)
+    new_w, new_h = int(w * scale), int(h * scale)
+    resized_image = cv2.resize(image, (new_w, new_h))
+
+    delta_w = target_size[1] - new_w
+    delta_h = target_size[0] - new_h
+    top, bottom = delta_h // 2, delta_h - (delta_h // 2)
+    left, right = delta_w // 2, delta_w - (delta_w // 2)
+
+    color = [0, 0, 0]
+    new_image = cv2.copyMakeBorder(resized_image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)
+    
+    return new_image
+
+def load_and_process_images(image_folder, target_size=(512, 512)):
+    processed_images = []
+    image_filenames = sorted(os.listdir(image_folder))
+
+    for image_filename in image_filenames:
+        if image_filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+            image_path = os.path.join(image_folder, image_filename)
+            image = cv2.imread(image_path)
+            if image is None:
+                print(f"Error reading image: {image_filename}")
+                continue
+
+            processed_image = resize_and_pad(image, target_size)
+            processed_images.append(processed_image)
+
+    return processed_images
+
+def image_to_base64(image):
+    _, buffer = cv2.imencode('.png', image)
+    img_str = base64.b64encode(buffer).decode('utf-8')
+    return f"data:image/png;base64,{img_str}"
+
+
+@app.route("/processing/<int:project_id>/<int:file_id>")
 @login_required
-def processing():
-    return render_template('processing.html')
+def processing(project_id, file_id):
+    file = File.query.get(file_id)
+    projects = Project.query.filter_by(user_id=current_user.id).all()
+
+    image_folder = f'static/image/{file.image_data}'
+    processed_images = load_and_process_images(image_folder)
+
+    visualized_processed_images = [image_to_base64(image) for image in processed_images]
+
+    return render_template('processing.html', projects=projects, file=file, images=visualized_processed_images)
 
 # @app.route("/angles", methods=['GET', 'POST'])
 # def angles():
