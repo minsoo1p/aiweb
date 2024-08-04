@@ -105,30 +105,36 @@
 					</div>
 
 					<div class="col-4" style="margin-top:2rem; padding-top: 0.5rem;">
-						<span class="image fit" style="height: 33rem; width: 33rem;"><img id="currentImage" src="/static/images/pic02.jpg" alt="" /></span>
-						<ul class="actions" style="padding-top: 0; padding-right: 4rem; justify-content: space-between;">
+						<div id="imageContainer" style="position: relative; height: 33rem; width: 33rem;">
+							<canvas id="mainCanvas" style="position: absolute; top: 0; left: 0;"></canvas>
+						</div>
+						<div style="margin-top: 10px;">
+							<button class="button primary small" onclick="expandImage()">Expand Image</button>
+							<button class="button primary small" onclick="nextImage()">Confirm & Save</button>
+						</div>
+						<!-- <ul class="actions" style="padding-top: 0; padding-right: 4rem; justify-content: space-between;">
 							<li><a href="#" class="button primary small" data-bs-toggle="modal" data-bs-target="#staticBackdrop">Expand Image</a></li>
 							<li><a href="#" class="button primary small" onclick="nextImage()">Confirm & Save</a></li>
-						</ul>
+						</ul> -->
 					</div>
 
 					
 					<!-- Modal -->
 					<div class="modal fade" id="staticBackdrop" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1" aria-labelledby="staticBackdropLabel" aria-hidden="true">
 						<div class="modal-dialog modal-lg">
-						<div class="modal-content">
-							<div class="modal-header">
-							<h1 class="modal-title fs-5" id="staticBackdropLabel">Expanded Image</h1>
-							<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+							<div class="modal-content">
+								<div class="modal-header">
+									<h1 class="modal-title fs-5" id="staticBackdropLabel">Expanded Image</h1>
+									<button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+								</div>
+								<div class="modal-body">
+									<canvas id="modalCanvas"></canvas>
+								</div>
+								<div class="modal-footer">
+									<button type="button" class="button small" data-bs-dismiss="modal">Close</button>
+									<button type="button" class="button primary small">Save</button>
+								</div>
 							</div>
-							<div class="modal-body">
-								<span class="image fit"><img id="modalImage" src="{{ images[0] }}" alt="" /></span>
-							</div>
-							<div class="modal-footer">
-							<button type="button" class="button small" data-bs-dismiss="modal">Close</button>
-							<button type="button" class="button primary small">Save</button>
-							</div>
-						</div>
 						</div>
 					</div>
 
@@ -291,7 +297,7 @@
 			</footer>
 
 		<!-- Scripts -->
-		<script>
+		<!-- <script>
 			const images = {{ images | tojson }};
 			let currentIndex = 0;
 
@@ -310,6 +316,119 @@
 			document.addEventListener('DOMContentLoaded', (event) => {
 				showImage(currentIndex);
 			});
+		</script> -->
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/4.5.0/fabric.min.js"></script>
+		<script>
+			var images = {{ images | tojson | safe }};
+			var segmentedImages = {{ segmented_images | tojson | safe }};
+			var lineObjects = {{ line_objects | tojson | safe }}
+			var currentImageIndex = 0;
+			var mainCanvas, modalCanvas;
+			var showSegmented = true;
+
+			function initializeCanvases() {
+				mainCanvas = new fabric.Canvas('mainCanvas', {
+					width: 512,
+					height: 512
+				});
+				modalCanvas = new fabric.Canvas('modalCanvas', {
+					width: 1024,
+					height: 1024
+				});
+			}
+
+			function loadImage(index, canvas, scale = 1) {
+				canvas.clear();
+
+				var img = new Image();
+				img.onload = function() {
+					var segImg = new Image();
+					segImg.onload = function() {
+						var tempCanvas = document.createElement('canvas');
+						var tempContext = tempCanvas.getContext('2d');
+						tempCanvas.width = canvas.width;
+						tempCanvas.height = canvas.height;
+		
+						// Draw the original image
+						tempContext.drawImage(img, 0, 0, canvas.width, canvas.height);
+		
+						if (showSegmented) {
+							// Get image data
+							var imageData = tempContext.getImageData(0, 0, canvas.width, canvas.height);
+							var data = imageData.data;
+		
+							// Draw segmented image to get its pixel data
+							tempContext.drawImage(segImg, 0, 0, canvas.width, canvas.height);
+							var segImageData = tempContext.getImageData(0, 0, canvas.width, canvas.height);
+							var segData = segImageData.data;
+		
+							// Apply yellow color to the black areas of the segmented image
+							for (var i = 0; i < data.length; i += 4) {
+								if (segData[i] === 0 && segData[i+1] === 0 && segData[i+2] === 0) {
+									data[i] = Math.round(data[i] * 0.7 + 255 * 0.3);     // R
+									data[i+1] = Math.round(data[i+1] * 0.7 + 255 * 0.3); // G
+									data[i+2] = Math.round(data[i+2] * 0.7);             // B
+								}
+							}
+		
+							// Put the modified image data back to the canvas
+							tempContext.putImageData(imageData, 0, 0);
+						}
+						
+						// Set the resulting image as background
+						canvas.setBackgroundImage(new fabric.Image(tempCanvas), canvas.renderAll.bind(canvas));
+		
+						if (lineObjects[index] && lineObjects[index].lines) {
+							addLineObjects(lineObjects[index].lines, canvas, scale);
+						}
+		
+						canvas.renderAll();
+					};
+					segImg.src = segmentedImages[index];
+				};
+				img.src = images[index];
+			}
+
+			// Event listener for checkbox
+			document.getElementById('segmentationCheckbox').addEventListener('change', function() {
+				showSegmented = this.checked;
+				loadImage(currentImageIndex, mainCanvas);
+			});
+
+			function addLineObjects(lines, canvas, scale) {
+				lines.forEach(function(line) {
+					var fabricLine = new fabric.Line([
+						line.start.x * scale, 
+						line.start.y * scale, 
+						line.end.x * scale, 
+						line.end.y * scale
+					], {
+						stroke: line.color,
+						strokeWidth: line.thickness * scale,
+						selectable: true,
+						evented: true
+					});
+					canvas.add(fabricLine);
+				});
+			}
+
+			function nextImage() {
+				currentImageIndex = (currentImageIndex + 1) % Images.length;
+				loadImage(currentImageIndex, mainCanvas);
+			}
+		
+			function expandImage() {
+				loadImage(currentImageIndex, modalCanvas, 2);
+				var modal = new bootstrap.Modal(document.getElementById('staticBackdrop'));
+				modal.show();
+			}
+		
+			// Initialize canvases when the page loads
+			document.addEventListener('DOMContentLoaded', function() {
+				initializeCanvases();
+				loadImage(currentImageIndex, mainCanvas);
+			});
+
 		</script>
 
 		

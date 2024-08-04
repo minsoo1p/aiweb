@@ -80,6 +80,13 @@
                             <td>{{ file.name2 }}</td>
 							<td>{{ file.image_number }}</td>
                             <td>{{ file.file_time }}</td>
+							<td>
+								<div class="inference-container">
+									<a href="{{ url_for('batch_inference', project_id=project_id, file_id=file.id) }}" class="button small" style="height: 3rem;font-size: 0.8rem;">Run Inference</a>
+									
+									<span class="completed-status {% if file.inference_complete %}visible{% endif %}">Completed</span>
+								</div>
+							</td>
                             <td style="text-align: right;"><a href="{{ url_for('processing', project_id = project_id, file_id = file.id) }}" class="fa-solid fa-chevron-right" style="text-decoration: none;"></a></td>
                         </tr>
 						{% endfor %}
