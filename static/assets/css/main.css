@@ -1936,6 +1936,27 @@ input, select, textarea {
 				.button.primary:hover:active {
 					background-color: #3998d3;
 				}
+		
+		.inference-container {
+			display: inline-flex;
+			align-items: center;
+			gap: 0.5em; 
+		}
+		
+		
+		.completed-status {
+			background-color: #4CAF50;
+			color: white;
+			padding: 0.3em 0.5em;
+			border-radius: 3px;
+			font-size: 0.8em;
+			opacity: 0;
+			transition: opacity 0.3s ease;
+		}
+		
+		.completed-status.visible {
+			opacity: 1;
+		}
 
 /* Features */
 
@@ -4078,3 +4099,71 @@ input, select, textarea {
 				}
 
 		}
+
+/* Information */
+	#main .inner {
+		max-width: 75em;
+		margin: 0 auto;
+		padding: 2em;
+	}
+
+	.guide-intro {
+		margin-bottom: 2em;
+	}
+
+	.instruction-container {
+		display: flex;
+		flex-direction: column;
+		gap: 2em;
+	}
+
+	.instruction-box {
+		display: flex;
+		background-color: #f5f5f5;
+		border-radius: 10px;
+		overflow: hidden;
+		box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+	}
+
+	.instruction-content,
+	.instruction-video {
+		flex: 1;
+		padding: 2em;
+	}
+
+	.instruction-content {
+		display: flex;
+		flex-direction: column;
+		justify-content: center;
+	}
+
+	.instruction-video {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.instruction-video video {
+		max-width: 100%;
+		max-height: 300px;
+		object-fit: contain;
+		pointer-events: none;
+	}
+
+	.instruction-box:nth-child(even) {
+		flex-direction: row-reverse;
+	}
+
+	@media screen and (max-width: 768px) {
+		.instruction-box {
+			flex-direction: column;
+		}
+
+		.instruction-box:nth-child(even) {
+			flex-direction: column;
+		}
+
+		.instruction-video video {
+			max-height: 200px;
+		}
+	}

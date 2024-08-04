@@ -1,0 +1,28 @@
+{
+    "lines": [
+        {
+            "start": {
+                "x": 18,
+                "y": 57
+            },
+            "end": {
+                "x": 90,
+                "y": 34
+            },
+            "color": "red",
+            "thickness": 2
+        },
+        {
+            "start": {
+                "x": 54,
+                "y": 80
+            },
+            "end": {
+                "x": 125,
+                "y": 46
+            },
+            "color": "green",
+            "thickness": 2
+        }
+    ]
+}

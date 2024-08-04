@@ -3,6 +3,7 @@ import numpy as np
 from PIL import Image
 import base64
 from io import BytesIO
+import json
 
 import os
 import shutil
@@ -14,7 +15,6 @@ from datetime import datetime
 
 from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, send_from_directory, flash
 from flask_bootstrap import Bootstrap5
-import os
 from datetime import datetime
 
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -72,6 +72,7 @@ class File(db.Model):
     image_number = db.Column(db.Integer)
     file_time = db.Column(db.String(100))
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
+    inference_complete = db.Column(db.Boolean, default=False)
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -198,9 +199,11 @@ def file(project_number):
         image_number = len(images)
         unique_folder_name = str(uuid.uuid4())
         folder_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_folder_name)
-        os.makedirs(folder_path, exist_ok=True)
+        os.makedirs(os.path.join(folder_path, 'Original'), exist_ok=True)
+        os.makedirs(os.path.join(folder_path, 'Segmented'), exist_ok=True)
+        os.makedirs(os.path.join(folder_path, 'Lines'), exist_ok=True)
         for image in images:
-            image_path = os.path.join(folder_path, image.filename)
+            image_path = os.path.join(folder_path, 'Original', image.filename)
             image.save(image_path)
         new_file = File(name1=Name1, name2=Name2, image_data=unique_folder_name, image_number=len(images) ,file_time=current_date, project_id=project_number)
         db.session.add(new_file)
@@ -214,7 +217,7 @@ def file(project_number):
 def delete_file(project_number, file_id):
     file = File.query.get(file_id)
     if file:
-        folder_path = os.path.join('static', 'image', file.image_data)
+        folder_path = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
         if os.path.exists(folder_path):
             shutil.rmtree(folder_path)
         else :
@@ -300,6 +303,35 @@ def image_to_base64(image):
     img_str = base64.b64encode(buffer).decode('utf-8')
     return f"data:image/png;base64,{img_str}"
 
+def model_inference(original_image_path, segmented_output_path):
+    """
+    # AI 모델 돌아가고 segmentation 결과물을 저장하는 함수
+    # 
+    # image = load_image(original_image_path)
+    # segmented_image = run_segmentation_model(image)
+    # save_image(segmented_image, segmented_output_path)
+    """
+    img = Image.open('tmp/segmented_mask.jpg')
+    img.save(segmented_output_path)
+    
+    pass
+
+def postprocessing_inference(original_image_path, segmented_image_path, line_objects_output_path):
+    """
+    # segmented output을 이용해 line object를 저장하는 함수
+    # 
+    # original_image = load_image(original_image_path)
+    # segmented_image = load_image(segmented_image_path)
+    # line_objects = generate_line_objects(original_image, segmented_image)
+    # save_json(line_objects, line_objects_output_path)
+    """
+    with open('tmp/line_objects.json', 'r') as file:
+        data = json.load(file)
+    
+    with open(line_objects_output_path, 'w') as file:
+        json.dump(data, file, indent=4)
+    
+    pass
 
 @app.route("/processing/<int:project_id>/<int:file_id>")
 @login_required
@@ -307,16 +339,99 @@ def processing(project_id, file_id):
     file = File.query.get(file_id)
     projects = Project.query.filter_by(user_id=current_user.id).all()
 
-    image_folder = f'static/image/{file.image_data}'
-    processed_images = load_and_process_images(image_folder)
+    folder_path = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
 
-    visualized_processed_images = [image_to_base64(image) for image in processed_images]
+    original_images = [url_for('static', filename=f'image/{file.image_data}/Original/{img}') 
+                        for img in sorted(os.listdir(os.path.join(folder_path, 'Original'))) 
+                        if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    segmented_images = [url_for('static', filename=f'image/{file.image_data}/Segmented/{img}') 
+                        for img in sorted(os.listdir(os.path.join(folder_path, 'Segmented'))) 
+                        if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    
+    # processed_original_images = load_and_process_images(original_images)
+    # processed_segmented_images = load_and_process_images(segmented_images)
+    
+    # visualized_original_images = [image_to_base64(img) for img in processed_original_images]
+    # visualized_segmented_images = [image_to_base64(img) for img in processed_segmented_images]
 
-    return render_template('processing.html', projects=projects, file=file, images=visualized_processed_images)
+    line_objects = []
+    for json_file in sorted(os.listdir(os.path.join(folder_path, 'Lines'))):
+        if json_file.lower().endswith('.json'):
+            with open(os.path.join(folder_path, 'Lines', json_file), 'r') as f:
+                line_objects.append(json.load(f))
+
+    return render_template('processing.html', projects=projects, file=file, images=original_images,
+                           segmented_images=segmented_images, line_objects=line_objects)
 
 # @app.route("/angles", methods=['GET', 'POST'])
 # def angles():
 #     return render_template('angles.html')
+
+@app.route("/batch_inference/<int:project_id>/<int:file_id>")
+@login_required
+def batch_inference(project_id, file_id):
+    file = File.query.get(file_id)
+    
+    if file and file.project_id == project_id:
+        image_folder = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
+        
+        original_folder = os.path.join(image_folder, 'Original')
+        segmented_folder = os.path.join(image_folder, 'Segmented')
+        lines_folder = os.path.join(image_folder, 'Lines')
+
+        os.makedirs(segmented_folder, exist_ok=True)
+        os.makedirs(lines_folder, exist_ok=True)
+        
+        for image_file in os.listdir(original_folder):
+            if image_file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                root, ext = os.path.splitext(image_file)
+                
+                original_path = os.path.join(original_folder, image_file)
+                segmented_path = os.path.join(segmented_folder, f"{root}_segmented.jpg")
+                line_objects_path = os.path.join(lines_folder, f"{root}_lines.json")
+                
+                model_inference(original_path, segmented_path)
+                postprocessing_inference(original_path, segmented_path, line_objects_path)
+        
+        file.inference_complete = True
+        db.session.commit()
+        
+        flash('Batch inference completed successfully for the selected file.')
+    else:
+        flash('Invalid file or permission denied.')
+    
+    return redirect(url_for('file', project_number=project_id))
+
+@app.route("/inference/<int:image_id>")
+@login_required
+def single_inference(image_id):
+    file = File.query.get(image_id)
+    
+    if file and file.user_id == current_user.id:
+        image_folder = os.path.join('static', 'image', file.image_data)
+        original_folder = os.path.join(image_folder, 'original')
+        segmented_folder = os.path.join(image_folder, 'segmented')
+        lines_folder = os.path.join(image_folder, 'lines')
+        
+        # 필요한 폴더 생성
+        os.makedirs(segmented_folder, exist_ok=True)
+        os.makedirs(lines_folder, exist_ok=True)
+        
+        for image_file in os.listdir(original_folder):
+            if image_file.lower().endswith(('.png', '.jpg', '.jpeg')):
+                original_path = os.path.join(original_folder, image_file)
+                segmented_path = os.path.join(segmented_folder, f"segmented_{image_file}")
+                line_objects_path = os.path.join(lines_folder, f"{os.path.splitext(image_file)[0]}_lines.json")
+                
+                model_inference(original_path, segmented_path)
+                postprocessing_inference(original_path, segmented_path, line_objects_path)
+        
+        flash('Inference completed successfully for the selected image.')
+    else:
+        flash('Invalid image or permission denied.')
+    
+    return redirect(url_for('project'))
+
 
 if __name__ == '__main__':
     app.run(debug=True)
