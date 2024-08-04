@@ -32,6 +32,8 @@ from datetime import date, datetime
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from sqlalchemy.orm import relationship
 
+from foot_lateral_model import foot_lateral_segmentation
+
 load_dotenv() 
 
 app = Flask(__name__)
@@ -292,7 +294,6 @@ def load_and_process_images(image_folder, target_size=(512, 512)):
 
             processed_image = resize_and_pad(image, target_size)
             processed_images.append(processed_image)
-
     return processed_images
 
 def image_to_base64(image):
@@ -301,7 +302,7 @@ def image_to_base64(image):
     return f"data:image/png;base64,{img_str}"
 
 
-@app.route("/processing/<int:project_id>/<int:file_id>")
+@app.route("/processing/<int:project_id>/<int:file_id>", methods=['GET','POST'])
 @login_required
 def processing(project_id, file_id):
     file = File.query.get(file_id)
@@ -313,6 +314,7 @@ def processing(project_id, file_id):
     visualized_processed_images = [image_to_base64(image) for image in processed_images]
 
     return render_template('processing.html', projects=projects, file=file, images=visualized_processed_images)
+
 
 # @app.route("/angles", methods=['GET', 'POST'])
 # def angles():
