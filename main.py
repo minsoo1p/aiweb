@@ -364,7 +364,7 @@ def processing(project_id, file_id):
     return render_template('processing.html', projects=projects, file=file, images=original_images,
                            segmented_images=segmented_images, line_objects=line_objects)
 
-
+aa
 # @app.route("/angles", methods=['GET', 'POST'])
 # def angles():
 #     return render_template('angles.html')
