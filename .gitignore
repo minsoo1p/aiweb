@@ -1,6 +1,3 @@
-static/models/model_tal.h5
-*.h5
-
 .env
 myenv/
 tmp/
