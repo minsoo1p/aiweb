@@ -32,6 +32,8 @@ from datetime import date, datetime
 from flask_login import UserMixin, login_user, LoginManager, login_required, current_user, logout_user
 from sqlalchemy.orm import relationship
 
+from foot_lateral_model import foot_lateral_segmentation
+
 load_dotenv() 
 
 app = Flask(__name__)
@@ -295,7 +297,6 @@ def load_and_process_images(image_folder, target_size=(512, 512)):
 
             processed_image = resize_and_pad(image, target_size)
             processed_images.append(processed_image)
-
     return processed_images
 
 def image_to_base64(image):
@@ -311,8 +312,8 @@ def model_inference(original_image_path, segmented_output_path):
     # segmented_image = run_segmentation_model(image)
     # save_image(segmented_image, segmented_output_path)
     """
-    img = Image.open('tmp/segmented_mask.jpg')
-    img.save(segmented_output_path)
+    # img = Image.open('HV op 1000.jpg')
+    # img.save(segmented_output_path)
     
     pass
 
@@ -325,15 +326,15 @@ def postprocessing_inference(original_image_path, segmented_image_path, line_obj
     # line_objects = generate_line_objects(original_image, segmented_image)
     # save_json(line_objects, line_objects_output_path)
     """
-    with open('tmp/line_objects.json', 'r') as file:
-        data = json.load(file)
+    # with open('tmp/line_objects.json', 'r') as file:
+    #     data = json.load(file)
     
-    with open(line_objects_output_path, 'w') as file:
-        json.dump(data, file, indent=4)
+    # with open(line_objects_output_path, 'w') as file:
+    #     json.dump(data, file, indent=4)
     
     pass
 
-@app.route("/processing/<int:project_id>/<int:file_id>")
+@app.route("/processing/<int:project_id>/<int:file_id>", methods=['GET','POST'])
 @login_required
 def processing(project_id, file_id):
     file = File.query.get(file_id)
@@ -362,6 +363,7 @@ def processing(project_id, file_id):
 
     return render_template('processing.html', projects=projects, file=file, images=original_images,
                            segmented_images=segmented_images, line_objects=line_objects)
+
 
 # @app.route("/angles", methods=['GET', 'POST'])
 # def angles():

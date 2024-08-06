@@ -82,7 +82,8 @@
                             <td>{{ file.file_time }}</td>
 							<td>
 								<div class="inference-container">
-									<a href="{{ url_for('batch_inference', project_id=project_id, file_id=file.id) }}" class="button small">Run Inference</a>
+									<a href="{{ url_for('batch_inference', project_id=project_id, file_id=file.id) }}" class="button small" style="height: 3rem;font-size: 0.8rem;">Run Inference</a>
+									
 									<span class="completed-status {% if file.inference_complete %}visible{% endif %}">Completed</span>
 								</div>
 							</td>
