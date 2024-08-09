@@ -14,7 +14,10 @@ class Process :
             return None, None
 
         if len(image.shape) == 3:
-            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            if image.shape[-1] > 1:
+                gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            else:
+                gray_image = image.squeeze()
         else:
             gray_image = image
 
