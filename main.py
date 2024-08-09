@@ -385,7 +385,7 @@ def batch_inference(project_id, file_id):
         os.makedirs(lines_folder, exist_ok=True)
         
         for image_file in os.listdir(original_folder):
-            if image_file.lower().endswith(('.png', '.jpg', '.jpeg')):
+            if image_file.lower().endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG')):
                 root, ext = os.path.splitext(image_file)
                 
                 original_path = os.path.join(original_folder, image_file)
