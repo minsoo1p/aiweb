@@ -1,10 +1,8 @@
 import tensorflow as tf
-from keras.utils import to_categorical
-# 예제 데이터
-y = [0, 1, 2, 3]
+import sys
 
-# one-hot 인코딩
-y_encoded = to_categorical(y)
+# print("TensorFlow version:", tf.__version__)
+# print("Keras version:", tf.keras.__version__)
 
-print(y_encoded)
-
+python_version = sys.version
+print("Python version:", python_version)
