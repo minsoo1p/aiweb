@@ -1,8 +1,5 @@
 import tensorflow as tf
-import sys
+import keras
 
-# print("TensorFlow version:", tf.__version__)
-# print("Keras version:", tf.keras.__version__)
-
-python_version = sys.version
-print("Python version:", python_version)
+print("TensorFlow version:", tf.__version__)
+print("Keras version:", keras.__version__)

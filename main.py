@@ -33,6 +33,7 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, cur
 from sqlalchemy.orm import relationship
 
 from foot_lateral_model import foot_lateral_segmentation
+from image_processing import Process
 
 load_dotenv() 
 
@@ -186,6 +187,16 @@ def delete_project(project_id):
         db.session.commit()
     return redirect(url_for('project'))
 
+def cv2_imread(file):
+    in_memory_file = BytesIO()
+    file.save(in_memory_file)
+    in_memory_file.seek(0)
+    
+    np_img = np.frombuffer(in_memory_file.read(), np.uint8)
+
+    img = cv2.imdecode(np_img, cv2.IMREAD_COLOR)
+
+    return img
 
 @app.route("/file/<int:project_number>", methods=["GET", "POST"])
 @login_required
@@ -205,8 +216,14 @@ def file(project_number):
         os.makedirs(os.path.join(folder_path, 'Segmented'), exist_ok=True)
         os.makedirs(os.path.join(folder_path, 'Lines'), exist_ok=True)
         for image in images:
-            image_path = os.path.join(folder_path, 'Original', image.filename)
-            image.save(image_path)
+            image_name = image.filename
+            image = cv2_imread(image)
+            
+            processing = Process()
+            processed_image = processing.preprocess_image(image)
+     
+            image_path = os.path.join(folder_path, 'Original', image_name)
+            cv2.imwrite(image_path, processed_image)
         new_file = File(name1=Name1, name2=Name2, image_data=unique_folder_name, image_number=len(images) ,file_time=current_date, project_id=project_number)
         db.session.add(new_file)
         db.session.commit()
@@ -312,8 +329,20 @@ def model_inference(original_image_path, segmented_output_path):
     # segmented_image = run_segmentation_model(image)
     # save_image(segmented_image, segmented_output_path)
     """
-    # img = Image.open('HV op 1000.jpg')
-    # img.save(segmented_output_path)
+    #dummy function
+    os.makedirs(segmented_output_path, exist_ok=True)
+    file_base = os.path.basename(original_image_path)
+    file_name = os.path.splitext(file_base)[0]
+    dummy_path = f'tmp/{file_name}_segmented'
+
+    if os.path.exists(dummy_path):
+        for item in os.listdir(dummy_path):
+            s = os.path.join(dummy_path, item)
+            d = os.path.join(segmented_output_path, item)
+            
+            shutil.copy2(s, d)
+            
+        print('dummy segmentation folder was made.')
     
     pass
 
@@ -326,11 +355,13 @@ def postprocessing_inference(original_image_path, segmented_image_path, line_obj
     # line_objects = generate_line_objects(original_image, segmented_image)
     # save_json(line_objects, line_objects_output_path)
     """
-    # with open('tmp/line_objects.json', 'r') as file:
-    #     data = json.load(file)
-    
-    # with open(line_objects_output_path, 'w') as file:
-    #     json.dump(data, file, indent=4)
+    #dummy function
+    os.makedirs(line_objects_output_path, exist_ok=True)
+    dummy_path = f'tmp/line_objects.json'
+    if os.path.exists(dummy_path):
+        shutil.copy2(dummy_path, os.path.join(line_objects_output_path, 'line_objects.json'))
+        
+        print('dummy line_objects folder was made.')
     
     pass
 
@@ -345,9 +376,6 @@ def processing(project_id, file_id):
     original_images = [url_for('static', filename=f'image/{file.image_data}/Original/{img}') 
                         for img in sorted(os.listdir(os.path.join(folder_path, 'Original'))) 
                         if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
-    segmented_images = [url_for('static', filename=f'image/{file.image_data}/Segmented/{img}') 
-                        for img in sorted(os.listdir(os.path.join(folder_path, 'Segmented'))) 
-                        if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
     
     # processed_original_images = load_and_process_images(original_images)
     # processed_segmented_images = load_and_process_images(segmented_images)
@@ -355,14 +383,37 @@ def processing(project_id, file_id):
     # visualized_original_images = [image_to_base64(img) for img in processed_original_images]
     # visualized_segmented_images = [image_to_base64(img) for img in processed_segmented_images]
 
-    line_objects = []
-    for json_file in sorted(os.listdir(os.path.join(folder_path, 'Lines'))):
-        if json_file.lower().endswith('.json'):
-            with open(os.path.join(folder_path, 'Lines', json_file), 'r') as f:
-                line_objects.append(json.load(f))
+    segmented_images = {}
+    segmented_folder = os.path.join(folder_path, 'Segmented')
+    for img_folder in sorted(os.listdir(segmented_folder)):
+        img_path = os.path.join(segmented_folder, img_folder)
+        if os.path.isdir(img_path):
+            segmented_images[img_folder] = [
+                url_for('static', filename=f'image/{file.image_data}/Segmented/{img_folder}/{img}')
+                for img in sorted(os.listdir(img_path))
+                if img.lower().endswith(('.png', '.jpg', '.jpeg'))
+            ]
+            
+    line_objects = {}
+    lines_folder = os.path.join(folder_path, 'Lines')
+    for img_folder in sorted(os.listdir(lines_folder)):
+        json_path = os.path.join(lines_folder, img_folder)
+        if os.path.isdir(json_path):
+            json_files = [f for f in os.listdir(json_path) if f.lower().endswith('.json')]
+            if json_files:
+                with open(os.path.join(json_path, json_files[0]), 'r') as f:
+                    try:
+                        line_objects[img_folder] = json.load(f)
+                    except json.JSONDecodeError:
+                        print(f"Error decoding JSON file: {json_files[0]}")
+                        line_objects[img_folder] = {}
 
-    return render_template('processing.html', projects=projects, file=file, images=original_images,
-                           segmented_images=segmented_images, line_objects=line_objects)
+    return render_template('processing.html', 
+                           projects=projects, 
+                           file=file, 
+                           original_images=original_images,
+                           segmented_images=segmented_images, 
+                           line_objects=json.dumps(line_objects))
 
 
 # @app.route("/angles", methods=['GET', 'POST'])
@@ -389,8 +440,8 @@ def batch_inference(project_id, file_id):
                 root, ext = os.path.splitext(image_file)
                 
                 original_path = os.path.join(original_folder, image_file)
-                segmented_path = os.path.join(segmented_folder, f"{root}_segmented.jpg")
-                line_objects_path = os.path.join(lines_folder, f"{root}_lines.json")
+                segmented_path = os.path.join(segmented_folder, root)
+                line_objects_path = os.path.join(lines_folder, root)
                 
                 model_inference(original_path, segmented_path)
                 postprocessing_inference(original_path, segmented_path, line_objects_path)
@@ -415,7 +466,6 @@ def single_inference(image_id):
         segmented_folder = os.path.join(image_folder, 'segmented')
         lines_folder = os.path.join(image_folder, 'lines')
         
-        # 필요한 폴더 생성
         os.makedirs(segmented_folder, exist_ok=True)
         os.makedirs(lines_folder, exist_ok=True)
         
