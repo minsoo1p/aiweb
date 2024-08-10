@@ -44,55 +44,67 @@ class foot_lateral_segmentation :
         images = np.array(images)
         return images
 
-    def segmentation(self, image, model) : 
-        model_path = models[model]
-        model = load_model(model_path)
+    def segmentation(self, image, *input_models) : 
+        predicted_masks = {}
         image = np.expand_dims(image, axis=0)  # Add batch dimension
 
-        # Predict the mask
-        predicted_mask = model.predict(image)
-        predicted_mask = (predicted_mask > 0.5).astype(np.uint8)  # Binarize the output
-        predicted_mask = predicted_mask[0, :, :, 0]
+        for input_model in input_models : 
+          model_path = models[input_model]
+          model = load_model(model_path)
+          
+          # Predict the mask
+          predicted_mask = model.predict(image)
+          predicted_mask = (predicted_mask > 0.5).astype(np.uint8)  # Binarize the output
+          predicted_mask = predicted_mask[0, :, :, 0]
+          predicted_masks[input_model] = predicted_mask
 
         original_image = image[0, :, :, 0]  # 배치 차원 제거
 
-        # 시각화
-        fig, axs = plt.subplots(1, 2, figsize=(10, 5))
-        axs[0].imshow(original_image, cmap='gray')
-        axs[0].set_title('Original Image')
-        axs[1].imshow(predicted_mask, cmap='gray')
-        axs[1].set_title('Predicted Mask')
-        plt.show()
+        return original_image, predicted_masks
+    
+    def to_JPG(self, image_array, path) : 
+        image_array = (image_array * 255).astype(np.uint8)
+        image = Image.fromarray(image_array)
+        image.save(path, format='JPEG')
+
+
         
 
-    # def blend(self, original_image, predicted_mask):
-    #     color_image = change(predicted_mask, [255, 0, 0])
-        
-    #     # original_image 값을 255로 변환
-    #     original_image = (original_image * 255).astype(np.uint8)
-    #     original_image = Image.fromarray(original_image)
 
-    #     # mask 이미지를 RGB로 변환
-    #     color_image = Image.fromarray(color_image)
+## 사용하는 방식
 
-    #     # 블렌딩 이미지 생성
-    #     merged_image = Image.blend(original_image.convert('RGBA'), color_image.convert('RGBA'), alpha=0.2)
+# path = 'static/image/f7048e8e-0f9d-499b-905c-08bd191d0798/KakaoTalk_20240807_213239161_02.jpg'
 
-    #     # 이미지 표시
-    #     plt.imshow(merged_image)
-    #     plt.axis('off')
-    #     plt.title('Blended Masks')
-    #     plt.show()
+# seg = foot_lateral_segmentation()
+# image = seg.preprocess(path)
+# original, masks = seg.segmentation(image,'m1', 'tib')
 
 
+## 시각화해서 보고 싶다면
 
-'''
-path = 'static/image/846546c3-d0f5-4a2a-9750-a25cdfd50eee'
 
-seg = foot_lateral_segmentation()
-images = seg.preprocess(path)
-seg.segmentation(images[1],'tal')
-'''
+# plt.figure(figsize=(10, 5))
+
+# # 첫 번째 subplot에 원본 이미지를 표시합니다.
+# plt.subplot(1, 2, 1)
+# plt.imshow(original, cmap='gray')
+# plt.title('Original Image')
+# plt.axis('off')
+
+# # 두 번째 subplot에 예측 마스크를 표시합니다.
+# plt.subplot(1, 2, 2)
+# plt.imshow(masks['tib'], cmap='gray')
+# plt.title('Predicted Mask')
+# plt.axis('off')
+
+# # 그림을 화면에 출력합니다.
+# plt.show()
+
+
+
+
+# seg.to_JPG(mask,'aaa')
+
 
 
 

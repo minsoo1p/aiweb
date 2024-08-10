@@ -56,38 +56,27 @@ class Process :
 
         return np.expand_dims(gray_resized_image, axis=-1)
 
-    def load_images (self, image_folder, target_size=(512, 512)):
-        images = []
+    def load_images (self, image_path, target_size=(512, 512)):
         bgrLower = np.array([0, 200, 200])    # 추출할 색의 하한(BGR)
         bgrUpper = np.array([100, 255, 255])  # 추출할 색의 상한(BGR)
-        image_filenames = sorted(os.listdir(image_folder))  # 파일 이름을 정렬하여 읽기 순서를 보장
 
-        for image_filename in image_filenames:
-            if image_filename.endswith('.JPG') or image_filename.endswith('.jpg'):
-                image_path = os.path.join(image_folder, image_filename)
-                image = cv2.imread(image_path)
-                if image is None:
-                    print(f"Error reading image: {image_filename}")
-                    continue
+        image = cv2.imread(image_path)
+        if image is None:
+            print(f"Error reading image: {image_path}")
 
-                processed_image = self.preprocess_image (image, target_size)
-                if processed_image is not None :
-                    if len(processed_image.shape) == 2:  # 그레이스케일 이미지인 경우
-                        processed_image = np.expand_dims(processed_image, axis=-1)  # 채널 차원을 추가하여 (512, 512, 1)로 만듦
-                    images.append(processed_image)
+        processed_image = self.preprocess_image (image, target_size)
+        if processed_image is not None :
+            if len(processed_image.shape) == 2:  # 그레이스케일 이미지인 경우
+                processed_image = np.expand_dims(processed_image, axis=-1)  # 채널 차원을 추가하여 (512, 512, 1)로 만듦
 
-        if not images :
-            print("Images were loaded correctly.")
-            return None, None
-
-        images_array = np.array(images)
+        images_array = np.array(processed_image)
         return images_array
 
 
-path = 'static/image/846546c3-d0f5-4a2a-9750-a25cdfd50eee'
-process = Process()
-images = process.load_images(path)
+# path = 'static\image\f7048e8e-0f9d-499b-905c-08bd191d0798\KakaoTalk_20240807_213239161_01.jpg'
+# process = Process()
+# images = process.load_images(path)
 
-print(images)
+
 
 
