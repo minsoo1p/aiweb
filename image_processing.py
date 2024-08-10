@@ -14,7 +14,10 @@ class Process :
             return None, None
 
         if len(image.shape) == 3:
-            gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            if image.shape[-1] > 1:
+                gray_image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+            else:
+                gray_image = image.squeeze()
         else:
             gray_image = image
 
@@ -81,8 +84,10 @@ class Process :
         return images_array
 
 
-# path = 'static/image/2a9253e5-7997-4706-8564-282c8f43f985'
-# process = Process()
-# images = process.load_images(path)
+path = 'static/image/846546c3-d0f5-4a2a-9750-a25cdfd50eee'
+process = Process()
+images = process.load_images(path)
+
+print(images)
 
 
