@@ -1,6 +1,6 @@
 import cv2
 import numpy as np
-from PIL import Image
+from PIL import Image, ImageOps
 import base64
 from io import BytesIO
 import json
@@ -198,6 +198,27 @@ def cv2_imread(file):
 
     return img
 
+
+def pad_image_to_square(input_image, target_size=512):
+    # 원본 이미지 크기 가져오기
+    width, height = input_image.size
+
+    # 이미지가 정사각형이 아니면 패딩 추가
+    if width != height:
+        # 패딩 계산
+        delta_w = target_size - width
+        delta_h = target_size - height
+        padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
+
+        # 패딩 추가하여 이미지 정사각형 만들기
+        input_image = ImageOps.expand(input_image, padding, fill=(0, 0, 0))
+
+    # 512x512로 크기 조정
+    output_image = input_image.resize((target_size, target_size), Image.ANTIALIAS)
+
+    return output_image
+
+# 사진을 올리는 순간 processed 파일 생성 
 @app.route("/file/<int:project_number>", methods=["GET", "POST"])
 @login_required
 def file(project_number):
@@ -212,18 +233,11 @@ def file(project_number):
         image_number = len(images)
         unique_folder_name = str(uuid.uuid4())
         folder_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_folder_name)
-        os.makedirs(os.path.join(folder_path, 'Original'), exist_ok=True)
-        os.makedirs(os.path.join(folder_path, 'Segmented'), exist_ok=True)
-        os.makedirs(os.path.join(folder_path, 'Lines'), exist_ok=True)
+        os.makedirs(os.path.join(folder_path, 'Processed'), exist_ok=True)
         for image in images:
-            image_name = image.filename
-            image = cv2_imread(image)
-            
-            processing = Process()
-            processed_image = processing.preprocess_image(image)
-     
-            image_path = os.path.join(folder_path, 'Original', image_name)
-            cv2.imwrite(image_path, processed_image)
+            image_path = os.path.join(folder_path, image.filename)
+            image.save(image_path)
+
         new_file = File(name1=Name1, name2=Name2, image_data=unique_folder_name, image_number=len(images) ,file_time=current_date, project_id=project_number)
         db.session.add(new_file)
         db.session.commit()
@@ -284,42 +298,28 @@ def delete_file(project_number, file_id):
 #     print(f"Loaded {len(images)} images with shape {images.shape}")
 
 
-def resize_and_pad(image, target_size=(512, 512)):
-    h, w = image.shape[:2]
-    scale = target_size[0] / max(h, w)
-    new_w, new_h = int(w * scale), int(h * scale)
-    resized_image = cv2.resize(image, (new_w, new_h))
 
-    delta_w = target_size[1] - new_w
-    delta_h = target_size[0] - new_h
-    top, bottom = delta_h // 2, delta_h - (delta_h // 2)
-    left, right = delta_w // 2, delta_w - (delta_w // 2)
 
-    color = [0, 0, 0]
-    new_image = cv2.copyMakeBorder(resized_image, top, bottom, left, right, cv2.BORDER_CONSTANT, value=color)
-    
-    return new_image
+# def load_and_process_images(image_folder, target_size=(512, 512)):
+#     processed_images = []
+#     image_filenames = sorted(os.listdir(image_folder))
 
-def load_and_process_images(image_folder, target_size=(512, 512)):
-    processed_images = []
-    image_filenames = sorted(os.listdir(image_folder))
+#     for image_filename in image_filenames:
+#         if image_filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
+#             image_path = os.path.join(image_folder, image_filename)
+#             image = cv2.imread(image_path)
+#             if image is None:
+#                 print(f"Error reading image: {image_filename}")
+#                 continue
 
-    for image_filename in image_filenames:
-        if image_filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-            image_path = os.path.join(image_folder, image_filename)
-            image = cv2.imread(image_path)
-            if image is None:
-                print(f"Error reading image: {image_filename}")
-                continue
+#             processed_image = resize_and_pad(image, target_size)
+#             processed_images.append(processed_image)
+#     return processed_images
 
-            processed_image = resize_and_pad(image, target_size)
-            processed_images.append(processed_image)
-    return processed_images
-
-def image_to_base64(image):
-    _, buffer = cv2.imencode('.png', image)
-    img_str = base64.b64encode(buffer).decode('utf-8')
-    return f"data:image/png;base64,{img_str}"
+# def image_to_base64(image):
+#     _, buffer = cv2.imencode('.png', image)
+#     img_str = base64.b64encode(buffer).decode('utf-8')
+#     return f"data:image/png;base64,{img_str}"
 
 def model_inference(original_image_path, segmented_output_path):
     """
@@ -330,19 +330,19 @@ def model_inference(original_image_path, segmented_output_path):
     # save_image(segmented_image, segmented_output_path)
     """
     #dummy function
-    os.makedirs(segmented_output_path, exist_ok=True)
-    file_base = os.path.basename(original_image_path)
-    file_name = os.path.splitext(file_base)[0]
-    dummy_path = f'tmp/{file_name}_segmented'
+    # os.makedirs(segmented_output_path, exist_ok=True)
+    # file_base = os.path.basename(original_image_path)
+    # file_name = os.path.splitext(file_base)[0]
+    # dummy_path = f'tmp/{file_name}_segmented'
 
-    if os.path.exists(dummy_path):
-        for item in os.listdir(dummy_path):
-            s = os.path.join(dummy_path, item)
-            d = os.path.join(segmented_output_path, item)
+    # if os.path.exists(dummy_path):
+    #     for item in os.listdir(dummy_path):
+    #         s = os.path.join(dummy_path, item)
+    #         d = os.path.join(segmented_output_path, item)
             
-            shutil.copy2(s, d)
+    #         shutil.copy2(s, d)
             
-        print('dummy segmentation folder was made.')
+    #     print('dummy segmentation folder was made.')
     
     pass
 
@@ -356,12 +356,12 @@ def postprocessing_inference(original_image_path, segmented_image_path, line_obj
     # save_json(line_objects, line_objects_output_path)
     """
     #dummy function
-    os.makedirs(line_objects_output_path, exist_ok=True)
-    dummy_path = f'tmp/line_objects.json'
-    if os.path.exists(dummy_path):
-        shutil.copy2(dummy_path, os.path.join(line_objects_output_path, 'line_objects.json'))
+    # os.makedirs(line_objects_output_path, exist_ok=True)
+    # dummy_path = f'tmp/line_objects.json'
+    # if os.path.exists(dummy_path):
+    #     shutil.copy2(dummy_path, os.path.join(line_objects_output_path, 'line_objects.json'))
         
-        print('dummy line_objects folder was made.')
+    #     print('dummy line_objects folder was made.')
     
     pass
 
@@ -373,8 +373,8 @@ def processing(project_id, file_id):
 
     folder_path = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
 
-    original_images = [url_for('static', filename=f'image/{file.image_data}/Original/{img}') 
-                        for img in sorted(os.listdir(os.path.join(folder_path, 'Original'))) 
+    original_images = [url_for('static', filename=f'image/{file.image_data}/{img}') 
+                        for img in sorted(os.listdir(os.path.join(folder_path))) 
                         if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
     
     # processed_original_images = load_and_process_images(original_images)
@@ -384,20 +384,18 @@ def processing(project_id, file_id):
     # visualized_segmented_images = [image_to_base64(img) for img in processed_segmented_images]
 
     segmented_images = {}
-    segmented_folder = os.path.join(folder_path, 'Segmented')
-    for img_folder in sorted(os.listdir(segmented_folder)):
-        img_path = os.path.join(segmented_folder, img_folder)
+    for img_folder in sorted(os.listdir(folder_path)):
+        img_path = os.path.join(folder_path, img_folder)
         if os.path.isdir(img_path):
             segmented_images[img_folder] = [
-                url_for('static', filename=f'image/{file.image_data}/Segmented/{img_folder}/{img}')
+                url_for('static', filename=f'image/{file.image_data}/{img}')
                 for img in sorted(os.listdir(img_path))
                 if img.lower().endswith(('.png', '.jpg', '.jpeg'))
             ]
             
     line_objects = {}
-    lines_folder = os.path.join(folder_path, 'Lines')
-    for img_folder in sorted(os.listdir(lines_folder)):
-        json_path = os.path.join(lines_folder, img_folder)
+    for img_folder in sorted(os.listdir(folder_path)):
+        json_path = os.path.join(folder_path, img_folder)
         if os.path.isdir(json_path):
             json_files = [f for f in os.listdir(json_path) if f.lower().endswith('.json')]
             if json_files:
@@ -428,20 +426,23 @@ def batch_inference(project_id, file_id):
     if file and file.project_id == project_id:
         image_folder = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
         
-        original_folder = os.path.join(image_folder, 'Original')
-        segmented_folder = os.path.join(image_folder, 'Segmented')
-        lines_folder = os.path.join(image_folder, 'Lines')
-
-        os.makedirs(segmented_folder, exist_ok=True)
-        os.makedirs(lines_folder, exist_ok=True)
-        
-        for image_file in os.listdir(original_folder):
-            if image_file.lower().endswith(('.png', '.jpg', '.jpeg')):
+        for image_file in os.listdir(image_folder):
+            if image_file.lower().endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG')):
+                full_image_path = os.path.join(image_folder, image_file)
+                image = Image.open(full_image_path)
                 root, ext = os.path.splitext(image_file)
-                
-                original_path = os.path.join(original_folder, image_file)
-                segmented_path = os.path.join(segmented_folder, root)
-                line_objects_path = os.path.join(lines_folder, root)
+
+                seg = foot_lateral_segmentation()
+                image = seg.preprocess(full_image_path)
+                original, masks = seg.segmentation(image, 'm1', 'tib')
+
+                for mask in masks : 
+                    output_path = os.path.join(image_folder, 'Processed', f'{root}_{mask}_{ext}')
+                    seg.to_JPG(masks[mask],output_path)
+
+                original_path = os.path.join(image_folder, image_file)
+                segmented_path = os.path.join(image_folder, image_file)
+                line_objects_path = os.path.join(image_folder, image_file)
                 
                 model_inference(original_path, segmented_path)
                 postprocessing_inference(original_path, segmented_path, line_objects_path)

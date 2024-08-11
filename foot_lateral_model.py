@@ -2,12 +2,13 @@ from keras.models import load_model
 import numpy as np
 import matplotlib.pyplot as plt
 from image_processing import Process
+from PIL import Image
 
-model_path_tib = 'static/models/model_tib.h5'
-model_path_tal = 'static/models/model_tal.h5'
-model_path_cal = 'static/models/model_cal.h5'
-model_path_m1 = 'static/models/model_m1.h5'
-model_path_m5 = 'static/models/model_m5.h5'
+model_path_tib = 'static/models/foot/tib_model.h5'
+model_path_tal = 'static/models/foot/tal_model.h5'
+model_path_cal = 'static/models/foot/cal_model.h5'
+model_path_m1 = 'static/models/foot/m1_model.h5'
+model_path_m5 = 'static/models/foot/m5_model.h5'
 models = {
     'tib' : model_path_tib,
     'tal' : model_path_tal,
@@ -16,6 +17,18 @@ models = {
     'm5' : model_path_m5,
 }
 
+def change(inputs, color):
+  arr_rgb = np.concatenate((inputs, inputs, inputs), axis=2) # 3번째 차원의 길이를 1에서 3으로 늘이기
+  x=inputs.shape[0]
+  y=inputs.shape[1]
+  for i in range(0,x):
+    for j in range(0,y):
+      if arr_rgb[i][j].all():
+        arr_rgb[i][j] = color
+      else:
+        arr_rgb[i][j]= [0,0,0]
+
+  return arr_rgb
 
 # model_cal = load_model(model_path_tal)
 
@@ -27,26 +40,70 @@ class foot_lateral_segmentation :
     def preprocess(self, path) :
         process = Process()
         images = process.load_images(path)
+        images = images.astype('float32') / 255.0 
+        images = np.array(images)
         return images
 
-    def segmentation(self, image, model) : 
-        model_path = models[model]
-        model = load_model(model_path)
+    def segmentation(self, image, *input_models) : 
+        predicted_masks = {}
         image = np.expand_dims(image, axis=0)  # Add batch dimension
 
-        # Predict the mask
-        predicted_mask = model.predict(image)
-        predicted_mask = (predicted_mask > 0.5).astype(np.uint8)  # Binarize the output
-        predicted_mask = predicted_mask[0, :, :, 0]
+        for input_model in input_models : 
+          model_path = models[input_model]
+          model = load_model(model_path)
+          
+          # Predict the mask
+          predicted_mask = model.predict(image)
+          predicted_mask = (predicted_mask > 0.5).astype(np.uint8)  # Binarize the output
+          predicted_mask = predicted_mask[0, :, :, 0]
+          predicted_masks[input_model] = predicted_mask
 
-        plt.imshow(predicted_mask, cmap='gray')
-        plt.show()
+        original_image = image[0, :, :, 0]  # 배치 차원 제거
 
-# path = 'static/image/846546c3-d0f5-4a2a-9750-a25cdfd50eee'
+        return original_image, predicted_masks
+    
+    def to_JPG(self, image_array, path) : 
+        image_array = (image_array * 255).astype(np.uint8)
+        image = Image.fromarray(image_array)
+        image.save(path, format='JPEG')
+
+
+        
+
+
+## 사용하는 방식
+
+# path = 'static/image/f7048e8e-0f9d-499b-905c-08bd191d0798/KakaoTalk_20240807_213239161_02.jpg'
 
 # seg = foot_lateral_segmentation()
-# images = seg.preprocess(path)
-# seg.segmentation(images[1],'tal')
+# image = seg.preprocess(path)
+# original, masks = seg.segmentation(image,'m1', 'tib')
+
+
+## 시각화해서 보고 싶다면
+
+
+# plt.figure(figsize=(10, 5))
+
+# # 첫 번째 subplot에 원본 이미지를 표시합니다.
+# plt.subplot(1, 2, 1)
+# plt.imshow(original, cmap='gray')
+# plt.title('Original Image')
+# plt.axis('off')
+
+# # 두 번째 subplot에 예측 마스크를 표시합니다.
+# plt.subplot(1, 2, 2)
+# plt.imshow(masks['tib'], cmap='gray')
+# plt.title('Predicted Mask')
+# plt.axis('off')
+
+# # 그림을 화면에 출력합니다.
+# plt.show()
+
+
+
+
+# seg.to_JPG(mask,'aaa')
 
 
 
@@ -54,16 +111,5 @@ class foot_lateral_segmentation :
 
 
 
-'''
-# Load an example image
-image = images[1]  # Change this to your input image
-image = np.expand_dims(image, axis=0)  # Add batch dimension
 
-# Predict the mask
-predicted_mask = model_cal.predict(image)
-predicted_mask = (predicted_mask > 0.5).astype(np.uint8)  # Binarize the output
-predicted_mask = predicted_mask[0, :, :, 0]
 
-plt.imshow(predicted_mask, cmap='gray')
-plt.show()
-'''
