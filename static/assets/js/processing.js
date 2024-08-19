@@ -1,4 +1,4 @@
-// Define color mapping for each segment
+// Define mapping as constant
 const segmentColors = {
     'cal': {r: 255, g: 0, b: 0},    // Red
     'm1': {r: 0, g: 0, b: 255},           // Blue
@@ -7,6 +7,20 @@ const segmentColors = {
     'm5': {r: 255, g: 0, b: 255},         // Magenta
 };
 
+const angleMapping = {
+    'TibioCalcaneal': 'tibiocalcaneal',
+    'TaloCalcaneal': 'talocalcaneal',
+    'Calcaneal Pitch': 'calcanealpitch',
+    'Meary': 'meary',
+    'Gissane': 'gissane',
+    'Böhler': 'bohler'
+};
+
+var global_id = 0;
+var angleTag = null
+var currentAngles = {};
+
+// Define canvas setting of main canvas
 var container = document.getElementById('canvasContainer');
 var containerWidth = container.offsetWidth;
 
@@ -15,26 +29,91 @@ var stage = new Konva.Stage({
     width: containerWidth,
     height: containerWidth
 });
-
 var layer = new Konva.Layer();
 stage.add(layer);
+
+// Define canvas setting of modal canvas
+var stageLarge, layerLarge;
+
+// Canvas 동기화 함수
+function syncLines(targetLayer, angleTag) {
+    if (!angleTag) {
+        throw new Error("No angle tag provided for synchronization");
+    }
+
+    const angleName = angleMapping[angleTag];
+
+    const lines = targetLayer.find('Line');
+    if (lines.length !== 2) {
+        throw new Error(`Expected 2 lines for ${angleTag}, but found ${lines.length}`);
+    }
+
+    const line_scaler = (targetLayer === layerLarge) ? 0.5 : 1;
+
+    const updatedLines = lines.map(line => {
+        const points = line.points();
+
+        return {
+            start: {
+                x: points[0] * line_scaler,
+                y: points[1] * line_scaler
+            },
+            end: {
+                x: points[2] * line_scaler,
+                y: points[3] * line_scaler
+            }
+        };
+    });
+
+    lineObjects[Object.keys(lineObjects)[global_id]][angleName] = updatedLines;
+}
+
+document.getElementById('staticBackdrop').addEventListener('shown.bs.modal', function ()  {
+    syncLines(layer, angleTag);
+
+    var containerLarge = document.getElementById('canvasContainerLarge');
+    var containerLargeWidth = containerLarge.offsetWidth;
+
+    if (!stageLarge) {
+        stageLarge = new Konva.Stage({
+            container: 'canvasContainerLarge',
+            width: containerLargeWidth,
+            height: containerLargeWidth
+        });
+        layerLarge = new Konva.Layer();
+        stageLarge.add(layerLarge);
+    } else {
+        stageLarge.width(containerLargeWidth);
+        stageLarge.height(containerLargeWidth);
+    }
+
+    updateBackground(stageLarge, layerLarge);
+});
+
+function saveExpandedImage() {
+    syncLines(layerLarge, angleTag);
+    updateBackground(stage, layer);
+    var myModalEl = document.getElementById('staticBackdrop');
+    var modal = bootstrap.Modal.getInstance(myModalEl);
+    modal.hide();
+}
 
 var backgroundImage = new Image();
 
 
 // Load the first original image by default
 if (originalImages.length > 0) {
-    backgroundImage.src = originalImages[0];
+    backgroundImage.src = originalImages[global_id];
 } else {
     console.error('No original images available');
 }
 
-function updateBackground() {
-    var originalImage = originalImages.length > 0 ? originalImages[0] : null;
+function updateBackground(targetStage, targetLayer) {
+    var originalImage = originalImages.length > 0 ? originalImages[global_id] : null;
     var selectedSegmentedImages = [];
 
     function addSegmentedImage(imageName) {
-        var segmentedImage = segmentedImages[Object.keys(segmentedImages)[0]];
+        var segmentedImage = segmentedImages[Object.keys(segmentedImages)[global_id]];
         if (segmentedImage && segmentedImage[imageName]) {
             selectedSegmentedImages.push({src: segmentedImage[imageName], name: imageName});
         }
@@ -54,7 +133,7 @@ function updateBackground() {
     }
     if (document.getElementById('Meary') && document.getElementById('Meary').checked) {
         addSegmentedImage('m1');
-        addSegmentedImage('cal');
+        addSegmentedImage('tal');
     }
     if ((document.getElementById('Gissane') && document.getElementById('Gissane').checked) || 
         (document.getElementById('Böhler') && document.getElementById('Böhler').checked)) {
@@ -83,25 +162,25 @@ function updateBackground() {
         )
     ]).then(images => {
         const canvas = document.createElement('canvas');
-        canvas.width = 512;
-        canvas.height = 512;
+        canvas.width = 528;
+        canvas.height = 528;
         const ctx = canvas.getContext('2d');
 
         // Draw original image at full opacity
         if (images[0]) {
             ctx.globalAlpha = 1;
-            ctx.drawImage(images[0], 0, 0, 512, 512);
+            ctx.drawImage(images[0], 0, 0, 528, 528);
         }
 
         // Process and draw segmented images
         for (let i = 1; i < images.length; i++) {
             const segmentedCanvas = document.createElement('canvas');
-            segmentedCanvas.width = 512;
-            segmentedCanvas.height = 512;
+            segmentedCanvas.width = 528;
+            segmentedCanvas.height = 528;
             const segmentedCtx = segmentedCanvas.getContext('2d');
             
-            segmentedCtx.drawImage(images[i].image, 0, 0, 512, 512);
-            const imageData = segmentedCtx.getImageData(0, 0, 512, 512);
+            segmentedCtx.drawImage(images[i].image, 0, 0, 528, 528);
+            const imageData = segmentedCtx.getImageData(0, 0, 528, 528);
             const data = imageData.data;
 
             const color = segmentColors[images[i].name] || {r: 128, g: 128, b: 128}; // Default to gray if color not found
@@ -126,58 +205,133 @@ function updateBackground() {
 
             // Draw the processed segmented image onto the main canvas
             ctx.globalAlpha = 0.5;
-            ctx.drawImage(segmentedCanvas, 0, 0, 512, 512);
+            ctx.drawImage(segmentedCanvas, 0, 0, 528, 528);
         }
 
         backgroundImage.src = canvas.toDataURL();
         backgroundImage.onload = function() {
-            layer.draw();
-            drawLines();
-        }
+            updateCanvasWithBackground(targetStage, targetLayer);
+        };
+
     }).catch(error => {
         console.error('Error loading images:', error);
     });
 }
 
+function updateCanvasWithBackground(targetStage, targetLayer) {
+    var target_images = targetLayer.find('Image');
+    target_images.forEach(image => image.destroy());
+    // var target_groups = targetLayer.find('Group');
+    // target_groups.forEach(group => group.destroy());
+
+    var image = new Konva.Image({
+        x: 0,
+        y: 0,
+        image: backgroundImage,
+        width: targetStage.width(),
+        height: targetStage.height()
+    });
+    targetLayer.add(image);
+    drawLines(targetStage, targetLayer);
+    targetLayer.draw();
+}
+
 // Add event listeners to checkboxes
 document.querySelectorAll('input[type="checkbox"]').forEach(checkbox => {
     checkbox.addEventListener('change', function() {
-        updateBackground();
-        drawLines();
+        if (this.checked) {
+            angleTag = this.id;
+        } else {
+            angleTag = null;
+        }
+
+        document.querySelectorAll('input[type="checkbox"]').forEach(otherCheckbox => {
+            if (otherCheckbox !== this) {
+                otherCheckbox.checked = false;
+            }
+        });
+
+        updateBackground(stage, layer);
     });
 });
 
-// Draw lines
-function drawLines() {
-    layer.find('Group').forEach(group => group.destroy());
+function confirmSave() {
+    let table = document.getElementById('dataTable');
+    let currentRow = table.rows[global_id + 1]; 
 
-    if (document.getElementById('TibioCalcaneal').checked) {
-        drawLinesForAngle('tibiocalcaneal');
-    }
-    if (document.getElementById('TaloCalcaneal').checked) {
-        drawLinesForAngle('talocalcaneal');
-    }
-    if (document.getElementById('Calcaneal Pitch').checked) {
-        drawLinesForAngle('calcanealpitch');
-    }
-    if (document.getElementById('Meary').checked) {
-        drawLinesForAngle('meary');
-    }
-    if (document.getElementById('Gissane').checked) {
-        drawLinesForAngle('gissane');
-    }
-    if (document.getElementById('Böhler').checked) {
-        drawLinesForAngle('bohler');
+    for (let [key, value] of Object.entries(currentAngles)) {
+        let cell = currentRow.querySelector(`td[data-angle="${key}"]`);
+        if (cell) {
+            cell.textContent = value.toFixed(1);
+        }
     }
 
-    updateAngleDisplay();
-    layer.batchDraw();
+    if (global_id < originalImages.length - 1) {
+        global_id++;
+        updateAllCanvases();
+    } else {
+        alert("You have reached the last image.");
+    }
 }
 
-function drawLinesForAngle(angleName) {
-    var lineObject = lineObjects[Object.keys(lineObjects)[0]];
+function saveAndExportData() {
+    let table = document.getElementById('dataTable');
+    let data = [];
+
+    for (let i = 1; i < table.rows.length; i++) {
+        let row = table.rows[i];
+        let rowData = {
+            id: row.getAttribute('data-id'),
+            image_name: row.cells[0].textContent
+        };
+
+        for (let j = 1; j < row.cells.length; j++) {
+            let cell = row.cells[j];
+            let angleType = cell.getAttribute('data-angle');
+            rowData[angleType] = parseFloat(cell.textContent) || null;
+        }
+
+        data.push(rowData);
+    }
+
+    fetch('/save_data_table', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert('Data saved successfully!');
+        } else {
+            alert('Error saving data.');
+        }
+    })
+    .catch((error) => {
+        console.error('Error:', error);
+        alert('Error saving data.');
+    });
+}
+
+// Draw lines
+function drawLines(stage, layer) {
+    layer.find('Group').forEach(group => group.destroy());
+
+    const angle_list = ['TibioCalcaneal', 'TaloCalcaneal', 'Calcaneal Pitch', 'Meary', 'Gissane', 'Böhler'];
+
+    angle_list.forEach(angle =>{
+        if (document.getElementById(angle).checked) {
+            drawLinesForAngle(angleMapping[angle], stage, layer);
+        }
+    })
+}
+
+function drawLinesForAngle(angleName, stage, layer) {
+    var lineObject = lineObjects[Object.keys(lineObjects)[global_id]];
     if (lineObject && lineObject[angleName]) {
-        var lines = lineFitting(lineObject[angleName]);
+        var lines = lineFitting(lineObject[angleName], canvasSize=stage.width());
         var groups = [];
         
         lines.forEach((line, index) => {
@@ -235,18 +389,18 @@ function drawLinesForAngle(angleName) {
 
                 shape.on('mouseup touchend', function() {
                     isDragging = false;
-                    updateLineObject(angleName, index, konvaLine, group);
+                    updateLineObject(lines, index, konvaLine, group, layer, angleName);
                 });
 
                 shape.on('dragmove', function() {
                     updateLine();
-                    updateLineObject(angleName, index, konvaLine, group);
+                    updateLineObject(lines, index, konvaLine, group, layer, angleName);
                 });
 
                 stage.on('mouseout', function() {
                     if (isDragging) {
                         isDragging = false;
-                        updateLineObject(angleName, index, konvaLine, group);
+                        updateLineObject(lines, index, konvaLine, group, layer, angleName);
                     }
                 });
             }
@@ -288,16 +442,26 @@ function drawLinesForAngle(angleName) {
 
         if (lines.length === 2) {
             var angle = calculateAngleBetweenLines(lines[0], lines[1]);
-            displayAngle(angle, lines[0], lines[1]);
+            displayAngle(angle, lines[0], lines[1], layer);
         }
-
-        layer.draw();
     }
 };
 
-function displayAngle(angle, line1, line2) {
+function displayAngle(angle, line1, line2, layer) {
     layer.find('Text').forEach(text => text.destroy());
     layer.find('Arc').forEach(arc => arc.destroy());
+
+    let currentAngleType = null;
+    for (let [key, value] of Object.entries(angleMapping)) {
+        if (document.getElementById(key).checked) {
+            currentAngleType = value;
+            break;
+        }
+    }
+
+    if (currentAngleType) {
+        currentAngles[currentAngleType] = parseFloat(angle);
+    }
     
     const x1 = line1.start.x, y1 = line1.start.y;
     const x2 = line1.end.x, y2 = line1.end.y;
@@ -317,9 +481,11 @@ function displayAngle(angle, line1, line2) {
             y: y1 + t * (y2 - y1)
         };
     }
+    const slope1 = (line1.end.y - line1.start.y) / (line1.end.x - line1.start.x);
+    const slope2 = (line2.end.y - line2.start.y) / (line2.end.x - line2.start.x);
 
-    var angle1 = Math.atan(line1.slope) * 180/Math.PI;
-    var angle2 = Math.atan(line2.slope) * 180/Math.PI;
+    var angle1 = Math.atan(slope1) * 180/Math.PI;
+    var angle2 = Math.atan(slope2) * 180/Math.PI;
 
     var startAngle = Math.min(angle1, angle2);
     var endAngle = Math.max(angle1, angle2);
@@ -344,9 +510,8 @@ function displayAngle(angle, line1, line2) {
         opacity: 0.7,
     });
 
-    // 텍스트 위치 계산
     const middleAngle = (konvaStartAngle + angle / 2) * Math.PI/180;
-    const textOffsetMultiplier = 1.5; // 이 값을 조절하여 텍스트 위치 조정
+    const textOffsetMultiplier = 1.8;
     const textX = center.x + Math.cos(middleAngle) * 30 * textOffsetMultiplier;
     const textY = center.y + Math.sin(middleAngle) * 30 * textOffsetMultiplier;
 
@@ -354,74 +519,73 @@ function displayAngle(angle, line1, line2) {
         x: textX,
         y: textY,
         text: angle + '°',
-        fontSize: 14,
+        fontSize: 16,
         fill: 'white',
         align: 'center',
     });
 
-    // angleText.offsetX(angleText.width() / 2);
+    angleText.offsetX(angleText.width() / 2);
     angleText.offsetY(angleText.height() / 2);
 
     layer.add(arc);
     layer.add(angleText);
-    layer.batchDraw();
 };
 
-function updateAngleDisplay() {
+function updateLineObject(lines, index, konvaLine, group, layer, angleName) {
+    var points = konvaLine.points();
+    var groupPos = group.position();
+    // const line_scaler = (layer === layerLarge) ? 0.5 : 1;
+
+    lines[index].start = { x: points[0] + groupPos.x, y: points[1] + groupPos.y };
+    lines[index].end = { x: points[2] + groupPos.x, y: points[3] + groupPos.y };
+
+    // const updatedLines = lines.map(line => {
+    //     return {
+    //         start: {
+    //             x: line.start.x * line_scaler,
+    //             y: line.start.y * line_scaler
+    //         },
+    //         end: {
+    //             x: line.end.x * line_scaler,
+    //             y: line.end.y * line_scaler
+    //         }
+    //     };
+    // });
+
+    // lineObjects[Object.keys(lineObjects)[global_id]][angleName] = updatedLines;
+    
     layer.find('Arc').forEach(arc => arc.destroy());
     layer.find('Text').forEach(text => text.destroy());
 
-    const angleMapping = {
-        'TibioCalcaneal': 'tibiocalcaneal',
-        'TaloCalcaneal': 'talocalcaneal',
-        'Calcaneal Pitch': 'calcanealpitch',
-        'Meary': 'meary',
-        'Gissane': 'gissane',
-        'Böhler': 'bohler'
-    };
-
-    Object.entries(angleMapping).forEach(([checkboxId, angleName]) => {
-        if (document.getElementById(checkboxId).checked) {
-            var lineObject = lineObjects[Object.keys(lineObjects)[0]];
-            if (lineObject && lineObject[angleName]) {
-                var lines = lineFitting(lineObject[angleName]);
-                if (lines.length === 2) {
-                    var angle = calculateAngleBetweenLines(lines[0], lines[1]);
-                    displayAngle(angle, lines[0], lines[1]);
-                }
-            }
-        }
-    });
-
-    layer.batchDraw();
-}
-
-function updateLineObject(angleName, index, konvaLine, group) {
-    var points = konvaLine.points();
-    var groupPos = group.position();
-    var lineObject = lineObjects[Object.keys(lineObjects)[0]][angleName][index];
-    lineObject.start = { x: points[0] + groupPos.x, y: points[1] + groupPos.y };
-    lineObject.end = { x: points[2] + groupPos.x, y: points[3] + groupPos.y };
-    console.log('Updated line object:', lineObject);
-
-    updateAngleDisplay();
+    if (lines.length === 2) {
+        var angle = calculateAngleBetweenLines(lines[0], lines[1]);
+        displayAngle(angle, lines[0], lines[1], layer);
+    }
 }
 
 function lineFitting(lines, canvasSize = 528, margin = 5) {
+    const scale = canvasSize / 528;
+
     return lines.map(line => {
         let start, end, slope;
 
-        // 첫 번째 형식: start와 end 점이 주어진 경우
         if ('start' in line && 'end' in line) {
-            start = line.start;
-            end = line.end;
+            start = {
+                x: line.start.x * scale,
+                y: line.start.y * scale
+            };
+            end = {
+                x: line.end.x * scale,
+                y: line.end.y * scale
+            };
             slope = (end.y - start.y) / (end.x - start.x);
-        } 
-        // 두 번째 형식: 한 점과 기울기가 주어진 경우
+        }
         else if ('point' in line && 'slope' in line) {
-            start = line.point;
+            start = {
+                x: line.point.x * scale,
+                y: line.point.y * scale
+            };
             slope = line.slope;
-            // 임의의 x 값을 사용하여 end 점 계산
             end = {
                 x: start.x + 1,
                 y: start.y + slope
@@ -430,11 +594,9 @@ function lineFitting(lines, canvasSize = 528, margin = 5) {
             throw new Error('Invalid line format');
         }
 
-        // y = mx + b 형태의 직선 방정식 계수 계산
         const m = slope;
         const b = start.y - m * start.x;
 
-        // 캔버스 경계와의 교점 계산
         const intersections = [
             {x: 0, y: b},                          // 왼쪽 경계
             {x: canvasSize, y: m * canvasSize + b},// 오른쪽 경계
@@ -442,65 +604,81 @@ function lineFitting(lines, canvasSize = 528, margin = 5) {
             {x: (canvasSize - b) / m, y: canvasSize} // 아래쪽 경계
         ];
 
-        // 유효한 교점만 필터링
         const validIntersections = intersections.filter(point => 
             point.x >= 0 && point.x <= canvasSize && 
             point.y >= 0 && point.y <= canvasSize
         );
 
-        // 교점이 2개 이상이면 가장 멀리 떨어진 두 점 선택
         if (validIntersections.length >= 2) {
             validIntersections.sort((a, b) => 
                 (a.x - b.x) ** 2 + (a.y - b.y) ** 2
             );
             let result = {
                 start: adjustPointPosition(validIntersections[0], canvasSize, margin),
-                end: adjustPointPosition(validIntersections[validIntersections.length - 1], canvasSize, margin),
-                slope: m
+                end: adjustPointPosition(validIntersections[1], canvasSize, margin),
             };
             return result;
         }
+
+        function adjustPointPosition(point, canvasSize, margin) {
+            return {
+                x: Math.max(margin, Math.min(canvasSize - margin, point.x)),
+                y: Math.max(margin, Math.min(canvasSize - margin, point.y))
+            };
+        };
 
         throw new Error('Line does not intersect canvas properly');
     });
 };
 
-function adjustPointPosition(point, canvasSize, margin) {
-    return {
-        x: Math.max(margin, Math.min(canvasSize - margin, point.x)),
-        y: Math.max(margin, Math.min(canvasSize - margin, point.y))
-    };
-};
-
 function calculateAngleBetweenLines(line1, line2) {
-    // 두 직선의 기울기 사용
-    let angle1 = Math.atan(line1.slope);
-    let angle2 = Math.atan(line2.slope);
+    const slope1 = (line1.end.y - line1.start.y) / (line1.end.x - line1.start.x);
+    const slope2 = (line2.end.y - line2.start.y) / (line2.end.x - line2.start.x);
 
-    // 두 각도의 차이 계산 (절대값)
+    let angle1 = Math.atan(slope1);
+    let angle2 = Math.atan(slope2);
+
     let angleDiff = Math.abs(angle1 - angle2);
 
-    // 예각 계산 (180도에서 뺌)
     let acuteAngle = Math.min(angleDiff, Math.PI - angleDiff);
 
-    // 라디안에서 도(degree)로 변환
     return (acuteAngle * 180 / Math.PI).toFixed(1);
 };
 
+function changeGlobalId(id) {
+    if (id >= 0 && id < originalImages.length) {
+        global_id = id;
+        updateAllCanvases();
+    } else {
+        console.error("Invalid id");
+    }
+}
 
-// Call drawLines after the background image has loaded
-backgroundImage.onload = function() {
-    var image = new Konva.Image({
-        x: 0,
-        y: 0,
-        image: backgroundImage,
-        width: stage.width(),
-        height: stage.height()
-    });
-    layer.add(image);
-    layer.draw();
-    drawLines();
-};
+function updateSelectedRow() {
+    let table = document.getElementById('dataTable');
+    let rows = table.getElementsByTagName('tr');
+    
+    for (let i = 1; i < rows.length; i++) {
+        if (i - 1 === global_id) {
+            rows[i].classList.add('selected-row');
+        } else {
+            rows[i].classList.remove('selected-row');
+        }
+    }
+}
+
+function updateAllCanvases() {
+    updateBackground(stage, layer);
+    if (stageLarge) {
+        updateBackground(stageLarge, layerLarge);
+    }
+
+    updateSelectedRow();
+}
+
+window.onload = function() {
+    updateBackground(stage, layer);
+}
 
 backgroundImage.onerror = function() {
     console.error('Error loading background image');
