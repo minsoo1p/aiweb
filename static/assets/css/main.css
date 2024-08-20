@@ -4168,4 +4168,7 @@ input, select, textarea {
 		}
 	}
 
-/* Canvas */
+/* Processing */
+.selected-row {
+    background-color: #e0e0e0;
+}
