@@ -17,21 +17,6 @@ models = {
     'm5' : model_path_m5,
 }
 
-def change(inputs, color):
-  arr_rgb = np.concatenate((inputs, inputs, inputs), axis=2) # 3번째 차원의 길이를 1에서 3으로 늘이기
-  x=inputs.shape[0]
-  y=inputs.shape[1]
-  for i in range(0,x):
-    for j in range(0,y):
-      if arr_rgb[i][j].all():
-        arr_rgb[i][j] = color
-      else:
-        arr_rgb[i][j]= [0,0,0]
-
-  return arr_rgb
-
-# model_cal = load_model(model_path_tal)
-
 
 class foot_lateral_segmentation :
     def __init__(self) -> None:
@@ -71,34 +56,34 @@ class foot_lateral_segmentation :
         
 
 
-## 사용하는 방식
+# 사용하는 방식
 
-# path = 'static/image/f7048e8e-0f9d-499b-905c-08bd191d0798/KakaoTalk_20240807_213239161_02.jpg'
+path = 'static/image/f7048e8e-0f9d-499b-905c-08bd191d0798/KakaoTalk_20240807_213239161_02.jpg'
 
-# seg = foot_lateral_segmentation()
-# image = seg.preprocess(path)
-# original, masks = seg.segmentation(image,'m1', 'tib')
-
-
-## 시각화해서 보고 싶다면
+seg = foot_lateral_segmentation()
+image = seg.preprocess(path)
+original, masks = seg.segmentation(image,'m1', 'tib')
 
 
-# plt.figure(figsize=(10, 5))
+# 시각화해서 보고 싶다면
 
-# # 첫 번째 subplot에 원본 이미지를 표시합니다.
-# plt.subplot(1, 2, 1)
-# plt.imshow(original, cmap='gray')
-# plt.title('Original Image')
-# plt.axis('off')
 
-# # 두 번째 subplot에 예측 마스크를 표시합니다.
-# plt.subplot(1, 2, 2)
-# plt.imshow(masks['tib'], cmap='gray')
-# plt.title('Predicted Mask')
-# plt.axis('off')
+plt.figure(figsize=(10, 5))
 
-# # 그림을 화면에 출력합니다.
-# plt.show()
+# 첫 번째 subplot에 원본 이미지를 표시합니다.
+plt.subplot(1, 2, 1)
+plt.imshow(original, cmap='gray')
+plt.title('Original Image')
+plt.axis('off')
+
+# 두 번째 subplot에 예측 마스크를 표시합니다.
+plt.subplot(1, 2, 2)
+plt.imshow(masks['m1'], cmap='gray')
+plt.title('Predicted Mask')
+plt.axis('off')
+
+# 그림을 화면에 출력합니다.
+plt.show()
 
 
 

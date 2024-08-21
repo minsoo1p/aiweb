@@ -4,6 +4,9 @@ import os
 import matplotlib.pyplot as plt
 from keras.utils import to_categorical
 
+import numpy as np
+import cv2
+
 class Process : 
     def __init__(self) -> None:
         pass
@@ -21,9 +24,7 @@ class Process :
         else:
             gray_image = image
 
-        blurred_image = cv2.GaussianBlur(gray_image, (5, 5), 0)
-        _, thresh_image = cv2.threshold(blurred_image, 1, 255, cv2.THRESH_BINARY)
-        contours_image, _ = cv2.findContours(thresh_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        contours_image, _ = cv2.findContours(gray_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
         if len(contours_image) == 0:
             resized_image = cv2.resize(image, target_size)
@@ -57,9 +58,6 @@ class Process :
         return np.expand_dims(gray_resized_image, axis=-1)
 
     def load_images (self, image_path, target_size=(512, 512)):
-        bgrLower = np.array([0, 200, 200])    # 추출할 색의 하한(BGR)
-        bgrUpper = np.array([100, 255, 255])  # 추출할 색의 상한(BGR)
-
         image = cv2.imread(image_path)
         if image is None:
             print(f"Error reading image: {image_path}")
@@ -72,8 +70,7 @@ class Process :
         images_array = np.array(processed_image)
         return images_array
 
-
-# path = 'static\image\f7048e8e-0f9d-499b-905c-08bd191d0798\KakaoTalk_20240807_213239161_01.jpg'
+# path = 'static/image/f7048e8e-0f9d-499b-905c-08bd191d0798/KakaoTalk_20240807_213239161_01.jpg'
 # process = Process()
 # images = process.load_images(path)
 
