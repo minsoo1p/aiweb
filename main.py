@@ -434,7 +434,7 @@ def batch_inference(project_id, file_id):
 
                 seg = foot_lateral_segmentation()
                 image = seg.preprocess(full_image_path)
-                original, masks = seg.segmentation(image, 'm1', 'tib')
+                original, masks = seg.segmentation(image, 'm1', 'm5', 'cal', 'tal', 'tib')
 
                 for mask in masks : 
                     output_path = os.path.join(image_folder, 'Processed', f'{root}_{mask}_{ext}')
