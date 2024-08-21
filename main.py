@@ -5,6 +5,7 @@ import base64
 from io import BytesIO
 import json
 
+import re
 import os
 import shutil
 from dotenv import load_dotenv
@@ -76,6 +77,23 @@ class File(db.Model):
     file_time = db.Column(db.String(100))
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
     inference_complete = db.Column(db.Boolean, default=False)
+    
+class DataTable(db.Model):
+    __tablename__ = 'data_table'
+    id = db.Column(db.Integer, primary_key=True)
+    file_id = db.Column(db.Integer, db.ForeignKey('file.id'), nullable=False)
+    image_name = db.Column(db.String(100), nullable=False)
+    HVA = db.Column(db.Float)
+    DMAA = db.Column(db.Float)
+    IMA = db.Column(db.Float)
+    talocalcaneal = db.Column(db.Float)
+    talonavicular = db.Column(db.Float)
+    incongruency = db.Column(db.Float)
+    tibiocalcaneal = db.Column(db.Float)
+    calcanealpitch = db.Column(db.Float)
+    meary = db.Column(db.Float)
+    gissane = db.Column(db.Float)
+    bohler = db.Column(db.Float)
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -242,6 +260,8 @@ def file(project_number):
         db.session.add(new_file)
         db.session.commit()
         files = File.query.filter_by(project_id=project_number).all()
+        data_tables = db.relationship('DataTable', backref='file', lazy=True)
+
         return render_template('file.html', projects=projects, files=files, project_id=project_number)
     return render_template('file.html', projects=projects, files=files, project_id=project_number)
 
@@ -370,12 +390,18 @@ def postprocessing_inference(original_image_path, segmented_image_path, line_obj
 def processing(project_id, file_id):
     file = File.query.get(file_id)
     projects = Project.query.filter_by(user_id=current_user.id).all()
+    data_tables = DataTable.query.filter_by(file_id=file_id).all()
 
     folder_path = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
+    processed_folder = os.path.join(folder_path, 'Processed')
 
     original_images = [url_for('static', filename=f'image/{file.image_data}/{img}') 
                         for img in sorted(os.listdir(os.path.join(folder_path))) 
                         if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
+    
+    preprocessed_images = [url_for('static', filename=f'image/{file.image_data}/Processed/{img}') 
+                        for img in sorted(os.listdir(os.path.join(folder_path, 'Processed'))) 
+                        if img.lower().endswith(('original.png', 'original.jpg', 'original.jpeg'))]
     
     # processed_original_images = load_and_process_images(original_images)
     # processed_segmented_images = load_and_process_images(segmented_images)
@@ -384,35 +410,69 @@ def processing(project_id, file_id):
     # visualized_segmented_images = [image_to_base64(img) for img in processed_segmented_images]
 
     segmented_images = {}
-    for img_folder in sorted(os.listdir(folder_path)):
-        img_path = os.path.join(folder_path, img_folder)
-        if os.path.isdir(img_path):
-            segmented_images[img_folder] = [
-                url_for('static', filename=f'image/{file.image_data}/{img}')
-                for img in sorted(os.listdir(img_path))
-                if img.lower().endswith(('.png', '.jpg', '.jpeg'))
-            ]
+    # for img_folder in sorted(os.listdir(folder_path)):
+    #     img_path = os.path.join(folder_path, img_folder)
+    #     if os.path.isdir(img_path):
+    #         segmented_images[img_folder] = [
+    #             url_for('static', filename=f'image/{file.image_data}/{img}')
+    #             for img in sorted(os.listdir(img_path))
+    #             if img.lower().endswith(('.png', '.jpg', '.jpeg'))
+    #         ]
+            
+    for img in sorted(os.listdir(processed_folder)):
+        if img.lower().endswith(('.png', '.jpg', '.jpeg')) and not img.lower().endswith(('_original.png', '_original.jpg', '_original.jpeg')):
+            root, ext = os.path.splitext(img)
+            parts = root.split('_')
+            if len(parts) > 1:
+                original_name = '_'.join(parts[:-1])
+                seg_type = parts[-1]
+                if original_name not in segmented_images:
+                    segmented_images[original_name] = {}
+                segmented_images[original_name][seg_type] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
+
             
     line_objects = {}
-    for img_folder in sorted(os.listdir(folder_path)):
-        json_path = os.path.join(folder_path, img_folder)
-        if os.path.isdir(json_path):
-            json_files = [f for f in os.listdir(json_path) if f.lower().endswith('.json')]
-            if json_files:
-                with open(os.path.join(json_path, json_files[0]), 'r') as f:
-                    try:
-                        line_objects[img_folder] = json.load(f)
-                    except json.JSONDecodeError:
-                        print(f"Error decoding JSON file: {json_files[0]}")
-                        line_objects[img_folder] = {}
+    for lines in sorted(os.listdir(processed_folder)):
+        if lines.lower().endswith('.json'):
+            root, ext = os.path.splitext(lines)
+            with open(os.path.join(processed_folder, lines), 'r') as f:
+                try:
+                    line_objects[root] = json.load(f)
+                except json.JSONDecodeError:
+                    print(f"Error decoding JSON file: {lines}")
+                    line_objects[root] = {}
+                    
+    if not data_tables:
+        for i, img in enumerate(preprocessed_images):
+            id = i
+            base_name = os.path.basename(img)
+            image_name = re.sub(r'_original\.jpg$', '', base_name)
+            
+            new_data = DataTable(file_id=file_id, id=id, image_name=image_name)
+            db.session.add(new_data)
+        db.session.commit()
+        data_tables = DataTable.query.filter_by(file_id=file_id).all()
 
     return render_template('processing.html', 
                            projects=projects, 
                            file=file, 
-                           original_images=original_images,
+                           original_images=preprocessed_images,
                            segmented_images=segmented_images, 
-                           line_objects=json.dumps(line_objects))
+                           line_objects=json.dumps(line_objects),
+                           data_tables=data_tables)
 
+# Processing page에서 'save and export data' 버튼 누르면 변경된 데이터를 저장
+@app.route("/save_data_table", methods=['POST'])
+@login_required
+def save_data_table():
+    data = request.json
+    for row in data:
+        data_table = DataTable.query.filter_by(image_name=row['image_name']).first()
+        for key, value in row.items():
+            if key != ('id' or 'image_name') and hasattr(data_table, key):
+                setattr(data_table, key, value)
+    db.session.commit()
+    return jsonify({"success": True})
 
 # @app.route("/angles", methods=['GET', 'POST'])
 # def angles():
@@ -435,9 +495,12 @@ def batch_inference(project_id, file_id):
                 seg = foot_lateral_segmentation()
                 image = seg.preprocess(full_image_path)
                 original, masks = seg.segmentation(image, 'm1', 'm5', 'cal', 'tal', 'tib')
+                original, masks = seg.segmentation(image, 'cal', 'tal', 'tib', 'm1', 'm5')
+                
+                seg.to_JPG(original, os.path.join(image_folder, 'Processed', f'{root}_original{ext}'))
 
                 for mask in masks : 
-                    output_path = os.path.join(image_folder, 'Processed', f'{root}_{mask}_{ext}')
+                    output_path = os.path.join(image_folder, 'Processed', f'{root}_{mask}{ext}')
                     seg.to_JPG(masks[mask],output_path)
 
                 original_path = os.path.join(image_folder, image_file)
