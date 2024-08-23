@@ -57,9 +57,9 @@ class foot_lateral_segmentation :
 
 # # 사용하는 방식
 
-# path = 'static/image/f7048e8e-0f9d-499b-905c-08bd191d0798/KakaoTalk_20240807_213239161_02.jpg'
+# path = 'static/image/f7048e8e-0f9d-499b-905c-08bd191d0798\KakaoTalk_20240807_213239161_02.jpg'
 
-# seg = foot_lateral_segmentation('m1', 'tib', 'tal', 'm5')
+# seg = foot_lateral_segmentation('cal')
 # image = seg.preprocess(path)
 # original, masks = seg.segmentation(image)
 
@@ -71,10 +71,10 @@ class foot_lateral_segmentation :
 #     decay_contour = clean_mask.decay_contour(arc_contour) 
 #     cleaned_masks[input] = decay_contour
 
+
+
 # post_data = Post_processing(cleaned_masks)
 # data = post_data.postProcess()
-# print(data)
-
 
 # # 시각화해서 보고 싶다면
 # plt.figure(figsize=(10, 5))
@@ -87,12 +87,13 @@ class foot_lateral_segmentation :
 
 # # 두 번째 subplot에 예측 마스크를 표시합니다.
 # plt.subplot(1, 2, 2)
-# plt.imshow(cleaned_masks['m1'], cmap='gray')
+# plt.imshow(np.array(cleaned_masks['cal']), cmap='gray')
 # plt.title('Predicted Mask')
 # plt.axis('off')
 
 # # 그림을 화면에 출력합니다.
 # plt.show()
+# plt.close()
 
 
 

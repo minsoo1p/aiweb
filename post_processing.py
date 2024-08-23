@@ -282,7 +282,11 @@ class Cleaning_contour :
     contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
 
     # 가장 큰 외곽선만
-    largest_contour = max(contours, key=cv2.contourArea)
+    if not contours:
+      pass
+    else : 
+      largest_contour = max(contours, key=cv2.contourArea)
+
 
     # 빈 마스크 생성
     largest_contour_mask = np.zeros_like(mask)
@@ -316,6 +320,7 @@ class Post_processing :
         self.cleaned_masks_data = cleaned_masks_data
 
     def postProcess(self):
+        self.cleaned_masks_data = self.cleaned_masks_data.copy()
         for input in self.cleaned_masks_data:
             if input == 'tib':
                cleaned_mask = self.cleaned_masks_data['tib']
