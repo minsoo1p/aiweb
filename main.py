@@ -500,16 +500,14 @@ def batch_inference(project_id, file_id):
     
     if file and file.project_id == project_id:
         image_folder = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
-        
+        seg = foot_lateral_segmentation('m1', 'm5', 'cal', 'tal', 'tib')
         for image_file in os.listdir(image_folder):
             if image_file.lower().endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG')):
                 full_image_path = os.path.join(image_folder, image_file)
                 image = Image.open(full_image_path)
                 root, ext = os.path.splitext(image_file)
-
-                seg = foot_lateral_segmentation()
                 image = seg.preprocess(full_image_path)
-                original, masks = seg.segmentation(image, 'm1', 'm5', 'cal', 'tal', 'tib')
+                original, masks = seg.segmentation(image)
 
                 seg.to_JPG(original, os.path.join(image_folder, 'Processed', f'{root}_original{ext}'))
 

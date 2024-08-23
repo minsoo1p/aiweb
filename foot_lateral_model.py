@@ -20,8 +20,8 @@ models = {
 
 
 class foot_lateral_segmentation :
-    def __init__(self) :
-        self.models = {key: load_model(path) for key, path in models.items()}
+    def __init__(self, *input_models) :
+        self.models = {input_model: load_model(models[input_model]) for input_model in input_models}
     
     def preprocess(self, path) :
         process = Process()
@@ -30,11 +30,11 @@ class foot_lateral_segmentation :
         images = np.array(images)
         return images
 
-    def segmentation(self, image, *input_models) : 
+    def segmentation(self, image) : 
         predicted_masks = {}
         image = np.expand_dims(image, axis=0)  # Add batch dimension
 
-        for input_model in input_models : 
+        for input_model in self.models : 
           model = self.models[input_model]
           # Predict the mask
           predicted_mask = model.predict(image)
@@ -55,13 +55,13 @@ class foot_lateral_segmentation :
         image.save(path, format='JPEG')
 
 
-# 사용하는 방식
+# # 사용하는 방식
 
 # path = 'static/image/f7048e8e-0f9d-499b-905c-08bd191d0798/KakaoTalk_20240807_213239161_02.jpg'
 
-# seg = foot_lateral_segmentation()
+# seg = foot_lateral_segmentation('m1', 'tib', 'tal', 'm5')
 # image = seg.preprocess(path)
-# original, masks = seg.segmentation(image,'m1', 'tib', 'tal', 'm5', 'cal')
+# original, masks = seg.segmentation(image)
 
 # clean_mask = Cleaning_contour()
 # cleaned_masks = {}
@@ -73,6 +73,7 @@ class foot_lateral_segmentation :
 
 # post_data = Post_processing(cleaned_masks)
 # data = post_data.postProcess()
+# print(data)
 
 
 # # 시각화해서 보고 싶다면
