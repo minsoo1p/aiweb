@@ -1,3 +1,5 @@
+import tensorflow as tf
+
 import cv2
 import numpy as np
 from PIL import Image, ImageOps
@@ -7,6 +9,7 @@ import json
 
 import re
 import os
+import json
 import shutil
 from dotenv import load_dotenv
 import uuid
@@ -35,6 +38,7 @@ from sqlalchemy.orm import relationship
 
 from foot_lateral_model import foot_lateral_segmentation
 from image_processing import Process
+from post_processing import Cleaning_contour, Post_processing
 
 load_dotenv() 
 
@@ -478,6 +482,17 @@ def save_data_table():
 # def angles():
 #     return render_template('angles.html')
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.integer):
+            return int(obj)
+        elif isinstance(obj, np.floating):
+            return float(obj)
+        elif isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super(NumpyEncoder, self).default(obj)
+
+@tf.function
 @app.route("/batch_inference/<int:project_id>/<int:file_id>")
 @login_required
 def batch_inference(project_id, file_id):
@@ -495,20 +510,33 @@ def batch_inference(project_id, file_id):
                 seg = foot_lateral_segmentation()
                 image = seg.preprocess(full_image_path)
                 original, masks = seg.segmentation(image, 'm1', 'm5', 'cal', 'tal', 'tib')
-                original, masks = seg.segmentation(image, 'cal', 'tal', 'tib', 'm1', 'm5')
-                
+
                 seg.to_JPG(original, os.path.join(image_folder, 'Processed', f'{root}_original{ext}'))
 
-                for mask in masks : 
-                    output_path = os.path.join(image_folder, 'Processed', f'{root}_{mask}{ext}')
-                    seg.to_JPG(masks[mask],output_path)
+                clean_mask = Cleaning_contour()
+                cleaned_masks = {}
+                for input in masks :
+                    clean_contour = clean_mask.clean_contour(masks[input])
+                    arc_contour = clean_mask.arc_contour(clean_contour)
+                    decay_contour = clean_mask.decay_contour(arc_contour) 
+                    cleaned_masks[input] = decay_contour
 
-                original_path = os.path.join(image_folder, image_file)
-                segmented_path = os.path.join(image_folder, image_file)
-                line_objects_path = os.path.join(image_folder, image_file)
+                    output_path = os.path.join(image_folder, 'Processed', f'{root}_{input}{ext}')
+                    seg.to_JPG(cleaned_masks[input],output_path)
+
+                post_data = Post_processing(cleaned_masks)
+                data = post_data.postProcess()
+
+                file_path = os.path.join(image_folder, 'Processed', f'{root}_postline.json')
+                with open(file_path, 'w') as json_file:
+                    json.dump(data, json_file, cls=NumpyEncoder, indent=4)
+
+                # original_path = os.path.join(image_folder, image_file)
+                # segmented_path = os.path.join(image_folder, image_file)
+                # line_objects_path = os.path.join(image_folder, image_file)
                 
-                model_inference(original_path, segmented_path)
-                postprocessing_inference(original_path, segmented_path, line_objects_path)
+                # model_inference(original_path, segmented_path)
+                # postprocessing_inference(original_path, segmented_path, line_objects_path)
         
         file.inference_complete = True
         db.session.commit()
@@ -519,34 +547,34 @@ def batch_inference(project_id, file_id):
     
     return redirect(url_for('file', project_number=project_id))
 
-@app.route("/inference/<int:image_id>")
-@login_required
-def single_inference(image_id):
-    file = File.query.get(image_id)
+# @app.route("/inference/<int:image_id>")
+# @login_required
+# def single_inference(image_id):
+#     file = File.query.get(image_id)
     
-    if file and file.user_id == current_user.id:
-        image_folder = os.path.join('static', 'image', file.image_data)
-        original_folder = os.path.join(image_folder, 'original')
-        segmented_folder = os.path.join(image_folder, 'segmented')
-        lines_folder = os.path.join(image_folder, 'lines')
+#     if file and file.user_id == current_user.id:
+#         image_folder = os.path.join('static', 'image', file.image_data)
+#         original_folder = os.path.join(image_folder, 'original')
+#         segmented_folder = os.path.join(image_folder, 'segmented')
+#         lines_folder = os.path.join(image_folder, 'lines')
         
-        os.makedirs(segmented_folder, exist_ok=True)
-        os.makedirs(lines_folder, exist_ok=True)
+#         os.makedirs(segmented_folder, exist_ok=True)
+#         os.makedirs(lines_folder, exist_ok=True)
         
-        for image_file in os.listdir(original_folder):
-            if image_file.lower().endswith(('.png', '.jpg', '.jpeg')):
-                original_path = os.path.join(original_folder, image_file)
-                segmented_path = os.path.join(segmented_folder, f"segmented_{image_file}")
-                line_objects_path = os.path.join(lines_folder, f"{os.path.splitext(image_file)[0]}_lines.json")
+#         for image_file in os.listdir(original_folder):
+#             if image_file.lower().endswith(('.png', '.jpg', '.jpeg')):
+#                 original_path = os.path.join(original_folder, image_file)
+#                 segmented_path = os.path.join(segmented_folder, f"segmented_{image_file}")
+#                 line_objects_path = os.path.join(lines_folder, f"{os.path.splitext(image_file)[0]}_lines.json")
                 
-                model_inference(original_path, segmented_path)
-                postprocessing_inference(original_path, segmented_path, line_objects_path)
+#                 model_inference(original_path, segmented_path)
+#                 postprocessing_inference(original_path, segmented_path, line_objects_path)
         
-        flash('Inference completed successfully for the selected image.')
-    else:
-        flash('Invalid image or permission denied.')
+#         flash('Inference completed successfully for the selected image.')
+#     else:
+#         flash('Invalid image or permission denied.')
     
-    return redirect(url_for('project'))
+#     return redirect(url_for('project'))
 
 
 if __name__ == '__main__':
