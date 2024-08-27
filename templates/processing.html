@@ -47,6 +47,11 @@
 							Select Angles
 						</div>
 
+						<div class="col-12 all-checkbox">
+							<input type="checkbox" id="All" name="All">
+							<label for="All"><strong>All</strong></label>
+						</div>
+
 						{% if file.name1 == 'Foot' and file.name2 == 'AnteroPosterior' %}
 						<div class="col-12" style="margin-bottom: 0.5rem;">
 							<input type="checkbox" id="HVA" name="HVA">
@@ -171,12 +176,12 @@
 												<td style="width:6rem">{{ data.talonavicular }}</td>
 												<td style="width:6rem">{{ data.incongurency }}</td>
 											{% elif file.name1 == 'Foot' and file.name2 == 'Lateral' %}
-												<td style="width:6rem" data-angle="tibiocalcaneal">{{ data.tibiocalcaneal }}</td>
-												<td style="width:6rem" data-angle="talocalcaneal">{{ data.talocalcaneal }}</td>
-												<td style="width:6rem" data-angle="calcanealpitch">{{ data.calcanealpitch }}</td>
-												<td style="width:6rem" data-angle="meary">{{ data.meary }}</td>
-												<td style="width:6rem" data-angle="gissane">{{ data.gissane }}</td>
-												<td style="width:6rem" data-angle="bohler">{{ data.bohler }}</td>
+												<td style="width:6rem" data-angle="TibioCalcaneal">{{ data.tibiocalcaneal }}</td>
+												<td style="width:6rem" data-angle="TaloCalcaneal">{{ data.talocalcaneal }}</td>
+												<td style="width:6rem" data-angle="Calcaneal Pitch">{{ data.calcanealpitch }}</td>
+												<td style="width:6rem" data-angle="Meary">{{ data.meary }}</td>
+												<td style="width:6rem" data-angle="Gissane">{{ data.gissane }}</td>
+												<td style="width:6rem" data-angle="Böhler">{{ data.bohler }}</td>
 											{% endif %}
 										</tr>
 										{% endfor %}
@@ -237,6 +242,10 @@
 			var originalImages = {{ original_images|tojson|safe }};
 			var segmentedImages = {{ segmented_images|tojson|safe }};
 			var lineObjects = JSON.parse('{{ line_objects|safe }}');
+			var file = {
+				name1: "{{ file.name1 }}",
+				name2: "{{ file.name2 }}"
+			}
 			
 		</script>
 
