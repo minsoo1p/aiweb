@@ -165,23 +165,21 @@
 										</tr>
 									</thead>
 									<tbody>
-										{% for data in data_tables %}
+										{% for row in angle_data %}
 										<tr>
-											<td style="width:7rem"><a href="#" onclick="changeGlobalId({{ loop.index0 }})">{{ data.image_name }}</a></td>
+											<td style="width:7rem"><a href="#" onclick="changeGlobalId({{ loop.index0 }})">{{ row['image_name'] }}</a></td>
 											{% if file.name1 == 'Foot' and file.name2 == 'AnteroPosterior' %}
-												<td style="width:6rem">{{ data.HVA }}</td>
+												<!-- <td style="width:6rem">{{ data.HVA }}</td>
 												<td style="width:6rem">{{ data.DMAA }}</td>
 												<td style="width:6rem">{{ data.IMA }}</td>
 												<td style="width:6rem">{{ data.talocalcaneal }}</td>
 												<td style="width:6rem">{{ data.talonavicular }}</td>
-												<td style="width:6rem">{{ data.incongurency }}</td>
+												<td style="width:6rem">{{ data.incongurency }}</td> -->
 											{% elif file.name1 == 'Foot' and file.name2 == 'Lateral' %}
-												<td style="width:6rem" data-angle="TibioCalcaneal">{{ data.tibiocalcaneal }}</td>
-												<td style="width:6rem" data-angle="TaloCalcaneal">{{ data.talocalcaneal }}</td>
-												<td style="width:6rem" data-angle="Calcaneal Pitch">{{ data.calcanealpitch }}</td>
-												<td style="width:6rem" data-angle="Meary">{{ data.meary }}</td>
-												<!-- <td style="width:6rem" data-angle="Gissane">{{ data.gissane }}</td>
-												<td style="width:6rem" data-angle="Böhler">{{ data.bohler }}</td> -->
+												<td style="width:6rem" data-angle="TibioCalcaneal">{{ row['tibioCalaneal'] }}</td>
+												<td style="width:6rem" data-angle="TaloCalcaneal">{{ row['taloCalcaneal'] }}</td>
+												<td style="width:6rem" data-angle="Calcaneal Pitch">{{ row['calcannealPitch'] }}</td>
+												<td style="width:6rem" data-angle="Meary">{{ row['Meary'] }}</td>
 											{% endif %}
 										</tr>
 										{% endfor %}
