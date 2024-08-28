@@ -2,7 +2,8 @@
 myenv/
 tmp/
 static/image
-.db
+posts.db
+./python-version
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
