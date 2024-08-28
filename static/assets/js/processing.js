@@ -19,8 +19,21 @@ function lineProcessing(lineObject) {
         rawLines['tib_tangent'] = lineObject['tib']['tangent'];
         rawLines['lowest'] = [lineObject['cal']['lowest'], lineObject['m5']['lowest']];
     }
-
     // Foot AP
+
+    const scaleFactor = 528 / 512;
+
+    for (let key in rawLines) {
+        if (rawLines[key] instanceof Array) {
+            rawLines[key] = rawLines[key].map(coord => {
+                if (coord instanceof Array) {
+                    return [coord[0] * scaleFactor, coord[1] * scaleFactor];
+                } else {
+                    return coord * scaleFactor;
+                }
+            });
+        }
+    }
 
     return rawLines;
 }
@@ -138,40 +151,37 @@ if (originalImages.length > 0) {
 }
 
 function updateBackground(targetStage, targetLayer) {
-    var originalImage = originalImages.length > 0 ? originalImages[global_id] : null;
-    var selectedSegmentedImages = [];
-    var segmentSet = new Set();
+    const originalImage = originalImages.length > 0 ? originalImages[global_id] : null;
+    const selectedSegmentedImages = [];
+    const segmentSet = new Set();
 
     function addSegmentedImage(imageName) {
         if (!segmentSet.has(imageName)) {
-            var segmentedImage = segmentedImages[Object.keys(segmentedImages)[global_id]];
+            const segmentedImage = segmentedImages[Object.keys(segmentedImages)[global_id]];
             if (segmentedImage && segmentedImage[imageName]) {
                 selectedSegmentedImages.push({src: segmentedImage[imageName], name: imageName});
                 segmentSet.add(imageName);
             }
         }
     }
-    
-    if (document.getElementById('TibioCalcaneal') && document.getElementById('TibioCalcaneal').checked) {
+
+    // Collect selected segmented images based on checked angles
+    if (document.getElementById('TibioCalcaneal')?.checked) {
         addSegmentedImage('tib');
         addSegmentedImage('cal');
     }
-    if (document.getElementById('TaloCalcaneal') && document.getElementById('TaloCalcaneal').checked) {
+    if (document.getElementById('TaloCalcaneal')?.checked) {
         addSegmentedImage('tal');
         addSegmentedImage('cal');
     }
-    if (document.getElementById('Calcaneal Pitch') && document.getElementById('Calcaneal Pitch').checked) {
+    if (document.getElementById('Calcaneal Pitch')?.checked) {
         addSegmentedImage('m5');
         addSegmentedImage('cal');
     }
-    if (document.getElementById('Meary') && document.getElementById('Meary').checked) {
+    if (document.getElementById('Meary')?.checked) {
         addSegmentedImage('m1');
         addSegmentedImage('tal');
     }
-    // if ((document.getElementById('Gissane') && document.getElementById('Gissane').checked) || 
-    //     (document.getElementById('Böhler') && document.getElementById('Böhler').checked)) {
-    //     addSegmentedImage('cal');
-    // }
 
     // Load and process images
     Promise.all([
@@ -202,7 +212,7 @@ function updateBackground(targetStage, targetLayer) {
         // Draw original image at full opacity
         if (images[0]) {
             ctx.globalAlpha = 1;
-            ctx.drawImage(images[0], 0, 0, 528, 528);
+            ctx.drawImage(images[0], 0, 0, canvas.width, canvas.height);
         }
 
         // Process and draw segmented images
@@ -212,18 +222,18 @@ function updateBackground(targetStage, targetLayer) {
             segmentedCanvas.height = 528;
             const segmentedCtx = segmentedCanvas.getContext('2d');
             
-            segmentedCtx.drawImage(images[i].image, 0, 0, 528, 528);
-            const imageData = segmentedCtx.getImageData(0, 0, 528, 528);
+            segmentedCtx.drawImage(images[i].image, 0, 0, segmentedCanvas.width, segmentedCanvas.height);
+            const imageData = segmentedCtx.getImageData(0, 0, segmentedCanvas.width, segmentedCanvas.height);
             const data = imageData.data;
 
             const color = segmentColors[images[i].name] || {r: 128, g: 128, b: 128}; // Default to gray if color not found
 
             for (let j = 0; j < data.length; j += 4) {
-                if (data[j] === 0 && data[j+1] === 0 && data[j+2] === 0) {
+                if (data[j] < 30 && data[j+1] < 30 && data[j+2] < 30) {
                     // Change black background to white
-                    data[j] = 255;
-                    data[j+1] = 255;
-                    data[j+2] = 255;
+                    // data[j] = 255;
+                    // data[j+1] = 255;
+                    // data[j+2] = 255;
                     data[j+3] = 0;  // Make it transparent
                 } else {
                     // Apply specific color to the bone mask
@@ -238,7 +248,7 @@ function updateBackground(targetStage, targetLayer) {
 
             // Draw the processed segmented image onto the main canvas
             ctx.globalAlpha = 0.5;
-            ctx.drawImage(segmentedCanvas, 0, 0, 528, 528);
+            ctx.drawImage(segmentedCanvas, 0, 0, canvas.width, canvas.height);
         }
 
         backgroundImage.src = canvas.toDataURL();
@@ -628,33 +638,6 @@ function lineFitting(lines, canvasSize = 528, margin = 15) {
             throw new Error('The number of points of lines is not 2');
         }
 
-        /*
-        if ('start' in line && 'end' in line) {
-            start = {
-                x: line.start.x * scale,
-                y: line.start.y * scale
-            };
-            end = {
-                x: line.end.x * scale,
-                y: line.end.y * scale
-            };
-            slope = (end.y - start.y) / (end.x - start.x);
-        }
-        else if ('point' in line && 'slope' in line) {
-            start = {
-                x: line.point.x * scale,
-                y: line.point.y * scale
-            };
-            slope = line.slope;
-            end = {
-                x: start.x + 1,
-                y: start.y + slope
-            };
-        } else {
-            throw new Error('Invalid line format');
-        }
-        */
-
         const m = slope;
         const b = start.y - m * start.x;
 
@@ -682,9 +665,27 @@ function lineFitting(lines, canvasSize = 528, margin = 15) {
         }
 
         function adjustPointPosition(point, canvasSize, margin) {
+            var adjusted_x, adjusted_y;
+            const del_x = Math.sqrt(margin**2/(m**2 + 1));
+            const del_y = Math.sqrt(margin**2/(m**2 + 1)) * Math.abs(m);
+
+            if (point.x === 0) {
+                adjusted_x = point.x + del_x;
+                adjusted_y = point.y + del_x * m;
+            } else if (point.x === canvasSize) {
+                adjusted_x = point.x - del_x;
+                adjusted_y = point.y - del_x * m;
+            } else if (point.y === 0) {
+                adjusted_x = point.x + del_y / m;
+                adjusted_y = point.y + del_y;
+            } else {
+                adjusted_x = point.x - del_y / m;
+                adjusted_y = point.y - del_y;
+            }
+            
             return {
-                x: Math.max(margin, Math.min(canvasSize - margin, point.x)),
-                y: Math.max(margin, Math.min(canvasSize - margin, point.y))
+                x: adjusted_x,
+                y: adjusted_y
             };
         };
 

@@ -6,6 +6,7 @@ from PIL import Image, ImageOps
 import base64
 from io import BytesIO
 import json
+import csv
 
 import re
 import os
@@ -82,22 +83,22 @@ class File(db.Model):
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
     inference_complete = db.Column(db.Boolean, default=False)
     
-class DataTable(db.Model):
-    __tablename__ = 'data_table'
-    id = db.Column(db.Integer, primary_key=True)
-    file_id = db.Column(db.Integer, db.ForeignKey('file.id'), nullable=False)
-    image_name = db.Column(db.String(100), nullable=False)
-    HVA = db.Column(db.Float)
-    DMAA = db.Column(db.Float)
-    IMA = db.Column(db.Float)
-    talocalcaneal = db.Column(db.Float)
-    talonavicular = db.Column(db.Float)
-    incongruency = db.Column(db.Float)
-    tibiocalcaneal = db.Column(db.Float)
-    calcanealpitch = db.Column(db.Float)
-    meary = db.Column(db.Float)
-    # gissane = db.Column(db.Float)
-    # bohler = db.Column(db.Float)
+# class DataTable(db.Model):
+#     __tablename__ = 'data_table'
+#     id = db.Column(db.Integer, primary_key=True)
+#     file_id = db.Column(db.Integer, db.ForeignKey('file.id'), nullable=False)
+#     image_name = db.Column(db.String(100), nullable=False)
+#     HVA = db.Column(db.Float)
+#     DMAA = db.Column(db.Float)
+#     IMA = db.Column(db.Float)
+#     talocalcaneal = db.Column(db.Float)
+#     talonavicular = db.Column(db.Float)
+#     incongruency = db.Column(db.Float)
+#     tibiocalcaneal = db.Column(db.Float)
+#     calcanealpitch = db.Column(db.Float)
+#     meary = db.Column(db.Float)
+#     # gissane = db.Column(db.Float)
+#     # bohler = db.Column(db.Float)
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -394,7 +395,6 @@ def postprocessing_inference(original_image_path, segmented_image_path, line_obj
 def processing(project_id, file_id):
     file = File.query.get(file_id)
     projects = Project.query.filter_by(user_id=current_user.id).all()
-    data_tables = DataTable.query.filter_by(file_id=file_id).all()
 
     folder_path = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
     processed_folder = os.path.join(folder_path, 'Processed')
@@ -446,16 +446,13 @@ def processing(project_id, file_id):
                     print(f"Error decoding JSON file: {lines}")
                     line_objects[root] = {}
                     
-    if not data_tables:
-        for i, img in enumerate(preprocessed_images):
-            id = i
-            base_name = os.path.basename(img)
-            image_name = re.sub(r'_original\.jpg$', '', base_name)
-            
-            new_data = DataTable(file_id=file_id, id=id, image_name=image_name)
-            db.session.add(new_data)
-        db.session.commit()
-        data_tables = DataTable.query.filter_by(file_id=file_id).all()
+    # Read angle data from CSV
+    csv_file_path = os.path.join(processed_folder, 'angles.csv')
+    angle_data = []
+    if os.path.exists(csv_file_path):
+        with open(csv_file_path, 'r') as csvfile:
+            reader = csv.DictReader(csvfile)
+            angle_data = list(reader)
 
     return render_template('processing.html', 
                            projects=projects, 
@@ -463,7 +460,7 @@ def processing(project_id, file_id):
                            original_images=preprocessed_images,
                            segmented_images=segmented_images, 
                            line_objects=json.dumps(line_objects),
-                           data_tables=data_tables)
+                           angle_data=angle_data)
 
 # Processing page에서 'save and export data' 버튼 누르면 변경된 데이터를 저장
 @app.route("/save_data_table", methods=['POST'])
@@ -501,40 +498,49 @@ def batch_inference(project_id, file_id):
     if file and file.project_id == project_id:
         image_folder = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
         seg = foot_lateral_segmentation('m1', 'm5', 'cal', 'tal', 'tib')
-        for image_file in os.listdir(image_folder):
-            if image_file.lower().endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG')):
-                full_image_path = os.path.join(image_folder, image_file)
-                image = Image.open(full_image_path)
-                root, ext = os.path.splitext(image_file)
-                image = seg.preprocess(full_image_path)
-                original, masks = seg.segmentation(image)
+        
+        #CSV creation
+        fieldnames = ['image_name', 'tibioCalaneal', 'taloCalcaneal', 'calcannealPitch', 'Meary']
+        csv_file_path = os.path.join(image_folder, 'Processed', f'angles.csv')
+        with open(csv_file_path, 'w', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+            writer.writeheader()
+            
+            for image_file in sorted(os.listdir(image_folder)):
+                if image_file.lower().endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG')):
+                    full_image_path = os.path.join(image_folder, image_file)
+                    image = Image.open(full_image_path)
+                    root, ext = os.path.splitext(image_file)
+                    image = seg.preprocess(full_image_path)
+                    original, masks = seg.segmentation(image)
 
-                seg.to_JPG(original, os.path.join(image_folder, 'Processed', f'{root}_original{ext}'))
+                    seg.to_JPG(original, os.path.join(image_folder, 'Processed', f'{root}_original{ext}'))
+                    
+                    clean_mask = Cleaning_contour()
+                    cleaned_masks = {}
+                    for input in masks :
+                        clean_contour = clean_mask.clean_contour(masks[input])
+                        arc_contour = clean_mask.arc_contour(clean_contour)
+                        decay_contour = clean_mask.decay_contour(arc_contour) 
+                        cleaned_masks[input] = decay_contour
 
-                clean_mask = Cleaning_contour()
-                cleaned_masks = {}
-                for input in masks :
-                    clean_contour = clean_mask.clean_contour(masks[input])
-                    arc_contour = clean_mask.arc_contour(clean_contour)
-                    decay_contour = clean_mask.decay_contour(arc_contour) 
-                    cleaned_masks[input] = decay_contour
+                        output_path = os.path.join(image_folder, 'Processed', f'{root}_{input}{ext}')
+                        seg.to_JPG(cleaned_masks[input],output_path)
 
-                    output_path = os.path.join(image_folder, 'Processed', f'{root}_{input}{ext}')
-                    seg.to_JPG(cleaned_masks[input],output_path)
+                    post_data = Post_processing(cleaned_masks)
+                    data = post_data.postProcess()
 
-                post_data = Post_processing(cleaned_masks)
-                data = post_data.postProcess()
-
-                file_path = os.path.join(image_folder, 'Processed', f'{root}_postline.json')
-                with open(file_path, 'w') as json_file:
-                    json.dump(data, json_file, cls=NumpyEncoder, indent=4)
-
-                # original_path = os.path.join(image_folder, image_file)
-                # segmented_path = os.path.join(image_folder, image_file)
-                # line_objects_path = os.path.join(image_folder, image_file)
-                
-                # model_inference(original_path, segmented_path)
-                # postprocessing_inference(original_path, segmented_path, line_objects_path)
+                    file_path = os.path.join(image_folder, 'Processed', f'{root}_postline.json')
+                    with open(file_path, 'w') as json_file:
+                        json.dump(data, json_file, cls=NumpyEncoder, indent=4)
+                        
+                    writer.writerow({
+                        'image_name': root,
+                        'tibioCalaneal': 'n/a',
+                        'taloCalcaneal': 'n/a',
+                        'calcannealPitch': 'n/a',
+                        'Meary': 'n/a'
+                    })
         
         file.inference_complete = True
         db.session.commit()
