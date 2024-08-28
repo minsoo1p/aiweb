@@ -31,8 +31,8 @@ const angleMapping = {
     'Calcaneal Pitch': ['cal_tangent', 'lowest'],
     'Meary': ['m1_axis', 'tal_axis'],
     // 아래 두개는 변경 필요
-    'Gissane': ['m1_axis', 'tal_axis'], 
-    'Böhler': ['m1_axis', 'tal_axis']
+    // 'Gissane': ['m1_axis', 'tal_axis'], 
+    // 'Böhler': ['m1_axis', 'tal_axis']
 
 };
 
@@ -40,8 +40,13 @@ var global_id = 0;
 var angleTag = null
 var currentAngles = {};
 
-var lineObject = lineObjects[Object.keys(lineObjects)[global_id]];
-var rawLines = lineProcessing(lineObject);
+var lineobject;
+var rawLines;
+
+function updateGlobalId() {
+    lineObject = lineObjects[Object.keys(lineObjects)[global_id]];
+    rawLines = lineProcessing(lineObject);
+};
 
 // Define canvas setting of main canvas
 var container = document.getElementById('canvasContainer');
@@ -163,10 +168,10 @@ function updateBackground(targetStage, targetLayer) {
         addSegmentedImage('m1');
         addSegmentedImage('tal');
     }
-    if ((document.getElementById('Gissane') && document.getElementById('Gissane').checked) || 
-        (document.getElementById('Böhler') && document.getElementById('Böhler').checked)) {
-        addSegmentedImage('cal');
-    }
+    // if ((document.getElementById('Gissane') && document.getElementById('Gissane').checked) || 
+    //     (document.getElementById('Böhler') && document.getElementById('Böhler').checked)) {
+    //     addSegmentedImage('cal');
+    // }
 
     // Load and process images
     Promise.all([
@@ -249,8 +254,6 @@ function updateBackground(targetStage, targetLayer) {
 function updateCanvasWithBackground(targetStage, targetLayer) {
     var target_images = targetLayer.find('Image');
     target_images.forEach(image => image.destroy());
-    // var target_groups = targetLayer.find('Group');
-    // target_groups.forEach(group => group.destroy());
 
     var image = new Konva.Image({
         x: 0,
@@ -358,7 +361,8 @@ function saveAndExportData() {
 function drawLines(stage, layer) {
     layer.find('Group').forEach(group => group.destroy());
 
-    const angle_list = ['TibioCalcaneal', 'TaloCalcaneal', 'Calcaneal Pitch', 'Meary', 'Gissane', 'Böhler'];
+    // const angle_list = ['TibioCalcaneal', 'TaloCalcaneal', 'Calcaneal Pitch', 'Meary', 'Gissane', 'Böhler'];
+    const angle_list = ['TibioCalcaneal', 'TaloCalcaneal', 'Calcaneal Pitch', 'Meary'];
 
     angle_list.forEach(angle =>{
         if (document.getElementById(angle).checked) {
@@ -375,7 +379,6 @@ function drawLinesForAngle(angle, stage, layer) {
 
     if (lineObject && targetLines) {
         var lines = lineFitting(targetLines, canvasSize=stage.width());
-        var groups = [];
         
         lines.forEach((line, index) => {
             var konvaLine = new Konva.Line({
@@ -411,7 +414,6 @@ function drawLinesForAngle(angle, stage, layer) {
             group.add(startAnchor);
             group.add(endAnchor);
             layer.add(group);
-            groups.push(group);
 
             function updateLine() {
                 var points = [
@@ -433,6 +435,7 @@ function drawLinesForAngle(angle, stage, layer) {
                 shape.on('mouseup touchend', function() {
                     isDragging = false;
                     updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
+                    updateBackground(stage, layer);
                 });
 
                 shape.on('dragmove', function() {
@@ -444,6 +447,7 @@ function drawLinesForAngle(angle, stage, layer) {
                     if (isDragging) {
                         isDragging = false;
                         updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
+                        updateBackground(stage, layer);
                     }
                 });
             }
@@ -456,6 +460,7 @@ function drawLinesForAngle(angle, stage, layer) {
     
                 shape.on('dragend', function() {
                     updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
+                    updateBackground(stage, layer);
                 });
             }
 
@@ -474,7 +479,7 @@ function drawLinesForAngle(angle, stage, layer) {
             });
 
             group.on('dragmove', function() {
-                updateLine();
+                // updateLine();/
                 layer.batchDraw();
             });
 
@@ -601,11 +606,9 @@ function updateLineObject(lines, index, konvaLine, group, layer, mapped_lines) {
         var angle = calculateAngleBetweenLines(lines[0], lines[1]);
         displayAngle(angle, lines[0], lines[1], layer);
     }
-
-    updateBackground(stage, layer);
 }
 
-function lineFitting(lines, canvasSize = 528, margin = 5) {
+function lineFitting(lines, canvasSize = 528, margin = 15) {
     const scale = canvasSize / 528;
 
     return lines.map(line => {
@@ -726,6 +729,8 @@ function updateSelectedRow() {
 }
 
 function updateAllCanvases() {
+    updateGlobalId();
+
     updateBackground(stage, layer);
     if (stageLarge) {
         updateBackground(stageLarge, layerLarge);
@@ -733,8 +738,7 @@ function updateAllCanvases() {
 
     updateSelectedRow();
 
-    var lineObject = lineObjects[Object.keys(lineObjects)[global_id]];
-    var rawLines = lineProcessing(lineObject);
+
 }
 
 window.onload = function() {
@@ -742,8 +746,10 @@ window.onload = function() {
         checkbox.checked = true;
     });
 
+    updateGlobalId();
     updateBackground(stage, layer);
     updateTableWithAngles();
+    updateSelectedRow();
 }
 
 backgroundImage.onerror = function() {
