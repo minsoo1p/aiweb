@@ -96,8 +96,8 @@ class DataTable(db.Model):
     tibiocalcaneal = db.Column(db.Float)
     calcanealpitch = db.Column(db.Float)
     meary = db.Column(db.Float)
-    gissane = db.Column(db.Float)
-    bohler = db.Column(db.Float)
+    # gissane = db.Column(db.Float)
+    # bohler = db.Column(db.Float)
 
 # Initialize Flask-Login
 login_manager = LoginManager()
@@ -539,9 +539,9 @@ def batch_inference(project_id, file_id):
         file.inference_complete = True
         db.session.commit()
         
-        flash('Batch inference completed successfully for the selected file.')
+        print('Batch inference completed successfully for the selected file.')
     else:
-        flash('Invalid file or permission denied.')
+        print('Invalid file or permission denied.')
     
     return redirect(url_for('file', project_number=project_id))
 

@@ -4170,7 +4170,7 @@ input, select, textarea {
 
 /* Processing */
 .selected-row {
-    background-color: #61a094;
+    background-color: #7ca19b76 !important;
 }
 
 /* Checkbox */
