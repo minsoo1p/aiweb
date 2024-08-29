@@ -400,7 +400,7 @@ def processing(project_id, file_id):
     processed_folder = os.path.join(folder_path, 'Processed')
 
     original_images = [url_for('static', filename=f'image/{file.image_data}/{img}') 
-                        for img in sorted(os.listdir(os.path.join(folder_path))) 
+                        for img in sorted(os.listdir(folder_path)) 
                         if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
     
     preprocessed_images = [url_for('static', filename=f'image/{file.image_data}/Processed/{img}') 
@@ -428,7 +428,7 @@ def processing(project_id, file_id):
             root, ext = os.path.splitext(img)
             parts = root.split('_')
             if len(parts) > 1:
-                original_name = '_'.join(parts[:-1])
+                original_name = '_'.join(parts[:-1]) + '_'
                 seg_type = parts[-1]
                 if original_name not in segmented_images:
                     segmented_images[original_name] = {}
@@ -506,7 +506,7 @@ def batch_inference(project_id, file_id):
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             
-            for image_file in sorted(os.listdir(image_folder)):
+            for image_file in sorted(os.listdir(image_folder), key=lambda file_name: os.path.splitext(file_name)[0] + '_'):
                 if image_file.lower().endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG')):
                     full_image_path = os.path.join(image_folder, image_file)
                     image = Image.open(full_image_path)

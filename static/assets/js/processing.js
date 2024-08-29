@@ -1,3 +1,5 @@
+console.log(originalImages);
+
 // Define mapping as constant
 const segmentColors = {
   cal: { r: 255, g: 0, b: 0 }, // Red

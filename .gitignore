@@ -3,6 +3,9 @@ myenv/
 tmp/
 static/image
 .python-version
+static/models
+*.log
+/build/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
