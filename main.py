@@ -428,7 +428,7 @@ def processing(project_id, file_id):
             root, ext = os.path.splitext(img)
             parts = root.split('_')
             if len(parts) > 1:
-                original_name = '_'.join(parts[:-1])
+                original_name = '_'.join(parts[:-1]) + '_'
                 seg_type = parts[-1]
                 if original_name not in segmented_images:
                     segmented_images[original_name] = {}
@@ -462,18 +462,18 @@ def processing(project_id, file_id):
                            line_objects=json.dumps(line_objects),
                            angle_data=angle_data)
 
-# Processing page에서 'save and export data' 버튼 누르면 변경된 데이터를 저장
-@app.route("/save_data_table", methods=['POST'])
-@login_required
-def save_data_table():
-    data = request.json
-    for row in data:
-        data_table = DataTable.query.filter_by(image_name=row['image_name']).first()
-        for key, value in row.items():
-            if key != ('id' or 'image_name') and hasattr(data_table, key):
-                setattr(data_table, key, value)
-    db.session.commit()
-    return jsonify({"success": True})
+# # Processing page에서 'save and export data' 버튼 누르면 변경된 데이터를 저장
+# @app.route("/save_data_table", methods=['POST'])
+# @login_required
+# def save_data_table():
+#     data = request.json
+#     for row in data:
+#         data_table = DataTable.query.filter_by(image_name=row['image_name']).first()
+#         for key, value in row.items():
+#             if key != ('id' or 'image_name') and hasattr(data_table, key):
+#                 setattr(data_table, key, value)
+#     db.session.commit()
+#     return jsonify({"success": True})
 
 # @app.route("/angles", methods=['GET', 'POST'])
 # def angles():
@@ -506,7 +506,7 @@ def batch_inference(project_id, file_id):
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             
-            for image_file in sorted(os.listdir(image_folder)):
+            for image_file in sorted(os.listdir(image_folder), key=lambda file_name: os.path.splitext(file_name)[0] + '_'):
                 if image_file.lower().endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG')):
                     full_image_path = os.path.join(image_folder, image_file)
                     image = Image.open(full_image_path)
