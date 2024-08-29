@@ -4291,6 +4291,55 @@ body.is-preload #banner .inner .actions {
 /* File dropdonw */
 
 .dropdown {
+<<<<<<< HEAD
+  position: relative;
+  display: inline-block;
+=======
+<<<<<<< HEAD
+    position: relative;
+    display: inline-block;
+>>>>>>> developing
+}
+
+.dropbtn {
+  background-color: #f1f1f1;
+  color: #333;
+  padding: 10px;
+  font-size: 16px;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+  text-align: left;
+}
+
+.dropdown-content {
+  display: none;
+  position: absolute;
+  background-color: #f9f9f9;
+  min-width: 160px;
+  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  z-index: 1;
+  width: 100%;
+}
+
+.dropdown-content label {
+  color: black;
+  padding: 12px 16px;
+  text-decoration: none;
+  display: block;
+}
+
+.dropdown-content label:hover {
+  background-color: #f1f1f1;
+}
+
+<<<<<<< HEAD
+.show {
+  display: block;
+}
+=======
+.show {display: block;}
+=======
   position: relative;
   display: inline-block;
 }
@@ -4330,15 +4379,53 @@ body.is-preload #banner .inner .actions {
 .show {
   display: block;
 }
+>>>>>>> 4c273fa1deac2421c828016d66317a2cd474bc9d
+>>>>>>> developing
 
 /* Processing */
 
 .selected-row {
+<<<<<<< HEAD
   background-color: #7ca19b76 !important;
+=======
+<<<<<<< HEAD
+    background-color: #7ca19b76 !important;
+=======
+  background-color: #7ca19b76 !important;
+>>>>>>> 4c273fa1deac2421c828016d66317a2cd474bc9d
+>>>>>>> developing
 }
 
 /* Checkbox */
 .all-checkbox {
+<<<<<<< HEAD
+  padding: 0rem 0;
+  margin: 0.5rem 0 1rem 0;
+  border-bottom: 2px solid #000000;
+  text-align: left;
+=======
+<<<<<<< HEAD
+    padding: 0rem 0;
+    margin: 0.5rem 0 1rem 0;
+    border-bottom: 2px solid #000000;
+	text-align: center;
+>>>>>>> developing
+}
+
+.all-checkbox label {
+  color: #4ea3d8;
+  font-weight: bold;
+  display: inline-block;
+  margin-left: 0.5rem;
+}
+.all-checkbox input[type="checkbox"] {
+  transform: scale(1.2);
+  accent-color: rgb(86, 171, 94);
+}
+<<<<<<< HEAD
+=======
+
+=======
   padding: 0rem 0;
   margin: 0.5rem 0 1rem 0;
   border-bottom: 2px solid #000000;
@@ -4355,3 +4442,5 @@ body.is-preload #banner .inner .actions {
   transform: scale(1.2);
   accent-color: rgb(86, 171, 94);
 }
+>>>>>>> 4c273fa1deac2421c828016d66317a2cd474bc9d
+>>>>>>> developing
