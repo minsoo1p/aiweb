@@ -47,6 +47,11 @@
 							Select Angles
 						</div>
 
+						<div class="col-12 all-checkbox">
+							<input type="checkbox" id="All" name="All">
+							<label for="All"><strong>All</strong></label>
+						</div>
+
 						{% if file.name1 == 'Foot' and file.name2 == 'AnteroPosterior' %}
 						<div class="col-12" style="margin-bottom: 0.5rem;">
 							<input type="checkbox" id="HVA" name="HVA">
@@ -90,14 +95,14 @@
 							<input type="checkbox" id="Meary" name="Meary">
 							<label for="Meary">Meary Angle</label>
 						</div>
-						<div class="col-12" style="margin-bottom: 0.5rem;">
+						<!-- <div class="col-12" style="margin-bottom: 0.5rem;">
 							<input type="checkbox" id="Gissane" name="Gissane">
 							<label for="Gissane">Gissane Angle</label>
 						</div>
 						<div class="col-12" style="margin-bottom: 0.5rem;">
 							<input type="checkbox" id="Böhler" name="Böhler">
 							<label for="Böhler">Böhler Angle</label>
-						</div>
+						</div> -->
 
 						{% endif %}
 
@@ -154,29 +159,27 @@
 												<th style="width:6rem">TaloCalcaneal</th>
 												<th style="width:6rem">Calcaneal Pitch</th>
 												<th style="width:6rem">Meary</th>
-												<th style="width:6rem">Gissane</th>
-												<th style="width:6rem">Böhler</th>
+												<!-- <th style="width:6rem">Gissane</th>
+												<th style="width:6rem">Böhler</th> -->
 											{% endif %}
 										</tr>
 									</thead>
 									<tbody>
-										{% for data in data_tables %}
+										{% for row in angle_data %}
 										<tr>
-											<td style="width:7rem"><a href="#" onclick="changeGlobalId({{ loop.index0 }})">{{ data.image_name }}</a></td>
+											<td style="width:7rem"><a href="#" onclick="changeGlobalId({{ loop.index0 }})">{{ row['image_name'] }}</a></td>
 											{% if file.name1 == 'Foot' and file.name2 == 'AnteroPosterior' %}
-												<td style="width:6rem">{{ data.HVA }}</td>
+												<!-- <td style="width:6rem">{{ data.HVA }}</td>
 												<td style="width:6rem">{{ data.DMAA }}</td>
 												<td style="width:6rem">{{ data.IMA }}</td>
 												<td style="width:6rem">{{ data.talocalcaneal }}</td>
 												<td style="width:6rem">{{ data.talonavicular }}</td>
-												<td style="width:6rem">{{ data.incongurency }}</td>
+												<td style="width:6rem">{{ data.incongurency }}</td> -->
 											{% elif file.name1 == 'Foot' and file.name2 == 'Lateral' %}
-												<td style="width:6rem" data-angle="tibiocalcaneal">{{ data.tibiocalcaneal }}</td>
-												<td style="width:6rem" data-angle="talocalcaneal">{{ data.talocalcaneal }}</td>
-												<td style="width:6rem" data-angle="calcanealpitch">{{ data.calcanealpitch }}</td>
-												<td style="width:6rem" data-angle="meary">{{ data.meary }}</td>
-												<td style="width:6rem" data-angle="gissane">{{ data.gissane }}</td>
-												<td style="width:6rem" data-angle="bohler">{{ data.bohler }}</td>
+												<td style="width:6rem" data-angle="TibioCalcaneal">{{ row['tibioCalaneal'] }}</td>
+												<td style="width:6rem" data-angle="TaloCalcaneal">{{ row['taloCalcaneal'] }}</td>
+												<td style="width:6rem" data-angle="Calcaneal Pitch">{{ row['calcannealPitch'] }}</td>
+												<td style="width:6rem" data-angle="Meary">{{ row['Meary'] }}</td>
 											{% endif %}
 										</tr>
 										{% endfor %}
@@ -237,6 +240,10 @@
 			var originalImages = {{ original_images|tojson|safe }};
 			var segmentedImages = {{ segmented_images|tojson|safe }};
 			var lineObjects = JSON.parse('{{ line_objects|safe }}');
+			var file = {
+				name1: "{{ file.name1 }}",
+				name2: "{{ file.name2 }}"
+			}
 			
 		</script>
 

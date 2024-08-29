@@ -467,4 +467,3 @@ class Post_processing :
                pass
         data = self.cleaned_masks_data
         return data
-    
