@@ -33,6 +33,8 @@
 			}
 		</style>
 		<link rel="stylesheet" href="{{ url_for('static', filename='assets/css/main.css') }}" />
+		<link href="https://cdn.jsdelivr.net/npm/selectize@0.12.6/dist/css/selectize.default.css" rel="stylesheet" />
+		<script src="https://cdn.jsdelivr.net/npm/selectize@0.12.6/dist/js/standalone/selectize.min.js"></script>
 	</head>
 	<body class="is-preload">
 
@@ -99,7 +101,7 @@
 				<form method="POST" action="{{ url_for('file', project_number=project_id) }}" enctype="multipart/form-data">
 					<div class="container">
 						<div class="row">
-							<div class="col-3 col-12-xsmall">
+							<div class="col-2 col-12-xsmall">
 								<select name="location" id="location">
 									<option value="">Location</option>
 									<option value="Foot">Foot</option>
@@ -115,7 +117,7 @@
 								</select>
 							</div>
 		
-							<div class="col-3 col-12-xsmall">
+							<div class="col-2 col-12-xsmall">
 								<select name="view" id="view">
 									<option value="">Type Of Image</option>
 									<option value="AnteroPosterior">AnteroPosterior</option>
@@ -128,6 +130,17 @@
 									<option value="Whole spine Lateral">Whole Spine Lateral</option>
 								</select>
 							</div>
+
+							<div class="col-4 col-12-xsmall">
+								<label for="angle-selectize">Select Angles</label>
+								<select id="angle-selectize" name="options" multiple="multiple">
+								  <option value="TibioCalcaneal">TibioCalcaneal Angle</option>
+								  <option value="TaloCalcaneal">TaloCalcaneal Angle</option>
+								  <option value="CalcanealPitch">Calcaneal Pitch Angle</option>
+								  <option value="Meary">Meary Angle</option>
+								</select>
+							</div>
+
 						</div>	
 		
 						<div class="row" style="padding-top: 0.7rem;">
@@ -214,6 +227,8 @@
 					alert('Please select at least one file.');
 				}
 			});
+
+			// JS for angle selection
 		</script>
 
 		<script src="{{ url_for('static', filename='assets/js/jquery.min.js') }}"></script>
