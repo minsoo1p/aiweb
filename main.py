@@ -462,18 +462,18 @@ def processing(project_id, file_id):
                            line_objects=json.dumps(line_objects),
                            angle_data=angle_data)
 
-# Processing page에서 'save and export data' 버튼 누르면 변경된 데이터를 저장
-@app.route("/save_data_table", methods=['POST'])
-@login_required
-def save_data_table():
-    data = request.json
-    for row in data:
-        data_table = DataTable.query.filter_by(image_name=row['image_name']).first()
-        for key, value in row.items():
-            if key != ('id' or 'image_name') and hasattr(data_table, key):
-                setattr(data_table, key, value)
-    db.session.commit()
-    return jsonify({"success": True})
+# # Processing page에서 'save and export data' 버튼 누르면 변경된 데이터를 저장
+# @app.route("/save_data_table", methods=['POST'])
+# @login_required
+# def save_data_table():
+#     data = request.json
+#     for row in data:
+#         data_table = DataTable.query.filter_by(image_name=row['image_name']).first()
+#         for key, value in row.items():
+#             if key != ('id' or 'image_name') and hasattr(data_table, key):
+#                 setattr(data_table, key, value)
+#     db.session.commit()
+#     return jsonify({"success": True})
 
 # @app.route("/angles", methods=['GET', 'POST'])
 # def angles():

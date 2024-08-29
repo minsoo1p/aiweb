@@ -4,6 +4,8 @@ import matplotlib.pyplot as plt
 from image_processing import Process
 from post_processing import Cleaning_contour, Post_processing
 from PIL import Image
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import os
 
 model_path_tib = 'static/models/foot/tib_model.h5'
 model_path_tal = 'static/models/foot/tal_model.h5'
@@ -19,40 +21,55 @@ models = {
 }
 
 
+def load_model_thread(model_name):
+    return model_name, load_model(models[model_name])
+
+
 class foot_lateral_segmentation :
-    def __init__(self, *input_models) :
-        self.models = {input_model: load_model(models[input_model]) for input_model in input_models}
-    
+    def __init__(self, *input_models):
+        self.models = {}
+        with ThreadPoolExecutor(max_workers=os.cpu_count()) as executor:
+            futures = [executor.submit(load_model_thread, model) for model in input_models]
+            for future in as_completed(futures):
+                model_name, loaded_model = future.result()
+                self.models[model_name] = loaded_model
+        self.max_workers = min(len(self.models), os.cpu_count() or 1)
+
     def preprocess(self, path) :
         process = Process()
         images = process.load_images(path)
-        images = images.astype('float32') / 255.0 
+        images = images.astype('float32') / 255.0
         images = np.array(images)
         return images
 
-    def segmentation(self, image) : 
-        predicted_masks = {}
+    def predict_mask(self, model_name, model, image):
+        predicted_mask = model.predict(image)
+        predicted_mask = (predicted_mask > 0.5).astype(np.uint8)  # Binarize the output
+        return model_name, predicted_mask[0, :, :, 0]
+
+    def segmentation(self, image):
         image = np.expand_dims(image, axis=0)  # Add batch dimension
 
-        for input_model in self.models : 
-          model = self.models[input_model]
-          # Predict the mask
-          predicted_mask = model.predict(image)
-          predicted_mask = (predicted_mask > 0.5).astype(np.uint8)  # Binarize the output
-          predicted_mask = predicted_mask[0, :, :, 0]
-          predicted_masks[input_model] = predicted_mask
+        with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+            futures = [executor.submit(self.predict_mask, model_name, model, image)
+                       for model_name, model in self.models.items()]
+
+            predicted_masks = {}
+            for future in as_completed(futures):
+                model_name, mask = future.result()
+                predicted_masks[model_name] = mask
 
         original_image = image[0, :, :, 0]  # 배치 차원 제거
 
         return original_image, predicted_masks
-    
-    def to_JPG(self, image_array, path) : 
+
+    def to_JPG(self, image_array, path) :
         if np.max(image_array) <= 1.0:
             image_array = (image_array * 255).astype(np.uint8)
         else:
             image_array = image_array.astype(np.uint8)
         image = Image.fromarray(image_array)
-        image.save(path, format='JPEG')
+        image.save(path, format='PNG')
 
 
 # # 사용하는 방식
