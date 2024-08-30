@@ -1,4 +1,6 @@
-console.log(originalImages);
+// console.log(originalImages);
+// console.log(segmentedImages);
+// console.log(lineObjects);
 
 // Define mapping as constant
 const segmentColors = {
@@ -53,7 +55,8 @@ const angleMapping = {
   // 'Böhler': ['m1_axis', 'tal_axis']
 };
 
-var global_id = 0;
+var global_id = 1;
+var image_number = image_number
 var angleTag = null;
 var currentAngles = {};
 
@@ -61,7 +64,7 @@ var lineobject;
 var rawLines;
 
 function updateGlobalId() {
-  lineObject = lineObjects[Object.keys(lineObjects)[global_id]];
+  lineObject = lineObjects[global_id]['content'];
   rawLines = lineProcessing(lineObject);
 }
 
@@ -145,22 +148,21 @@ function saveExpandedImage() {
 var backgroundImage = new Image();
 
 // Load the first original image by default
-if (originalImages.length > 0) {
+if (image_number > 0) {
   backgroundImage.src = originalImages[global_id];
 } else {
   console.error("No original images available");
 }
 
 function updateBackground(targetStage, targetLayer) {
-  const originalImage =
-    originalImages.length > 0 ? originalImages[global_id] : null;
+  const originalImage = image_number > 0 ? originalImages[global_id] : null;
   const selectedSegmentedImages = [];
   const segmentSet = new Set();
 
   function addSegmentedImage(imageName) {
     if (!segmentSet.has(imageName)) {
       const segmentedImage =
-        segmentedImages[Object.keys(segmentedImages)[global_id]];
+        segmentedImages[global_id];
       if (segmentedImage && segmentedImage[imageName]) {
         selectedSegmentedImages.push({
           src: segmentedImage[imageName],
@@ -332,7 +334,7 @@ document.addEventListener("DOMContentLoaded", function () {
 
 function updateTableWithAngles() {
   let table = document.getElementById("dataTable");
-  let currentRow = table.rows[global_id + 1]; // +1 because the first row is header
+  let currentRow = table.rows[global_id];
 
   for (let [key, value] of Object.entries(currentAngles)) {
     let cell = currentRow.querySelector(`td[data-angle="${key}"]`);
@@ -345,7 +347,7 @@ function updateTableWithAngles() {
 function confirmSave() {
   updateTableWithAngles();
 
-  if (global_id < originalImages.length - 1) {
+  if (global_id < image_number - 1) {
     global_id++;
     updateAllCanvases();
   } else {
@@ -746,7 +748,7 @@ function calculateAngleBetweenLines(line1, line2) {
 }
 
 function changeGlobalId(id) {
-  if (id >= 0 && id < originalImages.length) {
+  if (id > 0 && id <= image_number) {
     global_id = id;
     updateAllCanvases();
   } else {
@@ -759,7 +761,7 @@ function updateSelectedRow() {
   let rows = table.getElementsByTagName("tr");
 
   for (let i = 1; i < rows.length; i++) {
-    if (i - 1 === global_id) {
+    if (i === global_id) {
       rows[i].classList.add("selected-row");
     } else {
       rows[i].classList.remove("selected-row");

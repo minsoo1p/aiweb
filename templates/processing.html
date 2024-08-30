@@ -258,7 +258,7 @@
                     {% for row in angle_data %}
                     <tr>
                       <td style="width: 7rem">
-                        <a href="#" onclick="changeGlobalId({{ loop.index0 }})"
+                        <a href="#" onclick="changeGlobalId({{ loop.index0 +1 }})"
                           >{{ row['image_name'] }}</a
                         >
                       </td>
