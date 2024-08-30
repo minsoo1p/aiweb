@@ -515,7 +515,7 @@ def batch_inference(project_id, file_id):
         seg = foot_lateral_segmentation('m1', 'm5', 'cal', 'tal', 'tib')
         
         #CSV creation
-        fieldnames = ['image_name', 'tibioCalaneal', 'taloCalcaneal', 'calcannealPitch', 'Meary']
+        fieldnames = ['image_name', 'tibioCalaneal', 'taloCalcaneal', 'calcanealPitch', 'Meary']
         csv_file_path = os.path.join(image_folder, 'Processed', f'angles.csv')
         with open(csv_file_path, 'w', newline='') as csvfile:
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -553,7 +553,7 @@ def batch_inference(project_id, file_id):
                         'image_name': f'{index+1}.{root}',
                         'tibioCalaneal': 'n/a',
                         'taloCalcaneal': 'n/a',
-                        'calcannealPitch': 'n/a',
+                        'calcanealPitch': 'n/a',
                         'Meary': 'n/a'
                     })
         
