@@ -56,6 +56,7 @@ const angleMapping = {
 };
 
 var global_id = 1;
+var image_number = image_number
 var angleTag = null;
 var currentAngles = {};
 
@@ -147,14 +148,14 @@ function saveExpandedImage() {
 var backgroundImage = new Image();
 
 // Load the first original image by default
-if (Object.keys(originalImages).length > 0) {
+if (image_number > 0) {
   backgroundImage.src = originalImages[global_id];
 } else {
   console.error("No original images available");
 }
 
 function updateBackground(targetStage, targetLayer) {
-  const originalImage = Object.keys(originalImages).length > 0 ? originalImages[global_id] : null;
+  const originalImage = image_number > 0 ? originalImages[global_id] : null;
   const selectedSegmentedImages = [];
   const segmentSet = new Set();
 
@@ -346,7 +347,7 @@ function updateTableWithAngles() {
 function confirmSave() {
   updateTableWithAngles();
 
-  if (global_id < Object.keys(originalImages).length - 1) {
+  if (global_id < image_number - 1) {
     global_id++;
     updateAllCanvases();
   } else {
@@ -747,7 +748,7 @@ function calculateAngleBetweenLines(line1, line2) {
 }
 
 function changeGlobalId(id) {
-  if (id > 0 && id <= Object.keys(originalImages).length) {
+  if (id > 0 && id <= image_number) {
     global_id = id;
     updateAllCanvases();
   } else {

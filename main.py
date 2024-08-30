@@ -434,7 +434,6 @@ def processing(project_id, file_id):
         if img.lower().endswith(('.png', '.jpg', '.jpeg')) and not img.lower().endswith(('_original.png', '_original.jpg', '_original.jpeg')):
             root, ext = os.path.splitext(img)
             parts = root.split('_')
-            print(parts)
             if len(parts) > 2:
                 index = int(parts[0])
                 original_name = '_'.join(parts[1:-1])
@@ -442,7 +441,6 @@ def processing(project_id, file_id):
                 if index not in segmented_images:
                     segmented_images[index] = {}
                     segmented_images[index]['name'] = original_name
-                    print(original_name)
                 segmented_images[index][seg_type] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
 
             
