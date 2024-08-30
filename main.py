@@ -399,13 +399,20 @@ def processing(project_id, file_id):
     folder_path = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
     processed_folder = os.path.join(folder_path, 'Processed')
 
-    original_images = [url_for('static', filename=f'image/{file.image_data}/{img}') 
-                        for img in sorted(os.listdir(folder_path)) 
-                        if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
-    
-    preprocessed_images = [url_for('static', filename=f'image/{file.image_data}/Processed/{img}') 
-                        for img in sorted(os.listdir(os.path.join(folder_path, 'Processed'))) 
-                        if img.lower().endswith(('original.png', 'original.jpg', 'original.jpeg'))]
+    # original_images = [url_for('static', filename=f'image/{file.image_data}/{img}') 
+    #                     for img in sorted(os.listdir(folder_path)) 
+    #                     if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
+
+    preprocessed_images = {}
+    for img in sorted(os.listdir(processed_folder)):
+        if img.lower().endswith(('original.png', 'original.jpg', 'original.jpeg')):
+            index = int(img.split('_')[0])
+            preprocessed_images[index] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
+
+    # preprocessed_images = [url_for('static', filename=f'image/{file.image_data}/Processed/{img}') 
+    #                     for img in sorted(os.listdir(os.path.join(folder_path, 'Processed')), key=lambda file: int(file.split('_')[0])) 
+    #                     if img.lower().endswith(('original.png', 'original.jpg', 'original.jpeg'))]
+
     
     # processed_original_images = load_and_process_images(original_images)
     # processed_segmented_images = load_and_process_images(segmented_images)
@@ -422,26 +429,34 @@ def processing(project_id, file_id):
     #             for img in sorted(os.listdir(img_path))
     #             if img.lower().endswith(('.png', '.jpg', '.jpeg'))
     #         ]
-            
+    
     for img in sorted(os.listdir(processed_folder)):
         if img.lower().endswith(('.png', '.jpg', '.jpeg')) and not img.lower().endswith(('_original.png', '_original.jpg', '_original.jpeg')):
             root, ext = os.path.splitext(img)
             parts = root.split('_')
-            if len(parts) > 1:
-                original_name = '_'.join(parts[:-1]) + '_'
+            if len(parts) > 2:
+                index = int(parts[0])
+                original_name = '_'.join(parts[1:-1])
                 seg_type = parts[-1]
-                if original_name not in segmented_images:
-                    segmented_images[original_name] = {}
-                segmented_images[original_name][seg_type] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
+                if index not in segmented_images:
+                    segmented_images[index] = {}
+                    segmented_images[index]['name'] = original_name
+                segmented_images[index][seg_type] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
 
             
     line_objects = {}
     for lines in sorted(os.listdir(processed_folder)):
         if lines.lower().endswith('.json'):
             root, ext = os.path.splitext(lines)
+            parts = root.split('_')
+            index = int(parts[0])
+            original_name = '_'.join(parts[1:-1])
             with open(os.path.join(processed_folder, lines), 'r') as f:
                 try:
-                    line_objects[root] = json.load(f)
+                    line_objects[index] = {
+                        'name': original_name,
+                        'content': json.load(f)
+                    }
                 except json.JSONDecodeError:
                     print(f"Error decoding JSON file: {lines}")
                     line_objects[root] = {}
@@ -506,7 +521,7 @@ def batch_inference(project_id, file_id):
             writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
             writer.writeheader()
             
-            for image_file in sorted(os.listdir(image_folder), key=lambda file_name: os.path.splitext(file_name)[0] + '_'):
+            for index, image_file in enumerate(sorted(os.listdir(image_folder))):
                 if image_file.lower().endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG')):
                     full_image_path = os.path.join(image_folder, image_file)
                     image = Image.open(full_image_path)
@@ -514,7 +529,7 @@ def batch_inference(project_id, file_id):
                     image = seg.preprocess(full_image_path)
                     original, masks = seg.segmentation(image)
 
-                    seg.to_JPG(original, os.path.join(image_folder, 'Processed', f'{root}_original{ext}'))
+                    seg.to_JPG(original, os.path.join(image_folder, 'Processed', f'{index+1}_{root}_original{ext}'))
                     
                     clean_mask = Cleaning_contour()
                     cleaned_masks = {}
@@ -524,18 +539,18 @@ def batch_inference(project_id, file_id):
                         decay_contour = clean_mask.decay_contour(arc_contour) 
                         cleaned_masks[input] = decay_contour
 
-                        output_path = os.path.join(image_folder, 'Processed', f'{root}_{input}{ext}')
+                        output_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{input}{ext}')
                         seg.to_JPG(cleaned_masks[input],output_path)
 
                     post_data = Post_processing(cleaned_masks)
                     data = post_data.postProcess()
 
-                    file_path = os.path.join(image_folder, 'Processed', f'{root}_postline.json')
+                    file_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_postline.json')
                     with open(file_path, 'w') as json_file:
                         json.dump(data, json_file, cls=NumpyEncoder, indent=4)
                         
                     writer.writerow({
-                        'image_name': root,
+                        'image_name': f'{index+1}.{root}',
                         'tibioCalaneal': 'n/a',
                         'taloCalcaneal': 'n/a',
                         'calcannealPitch': 'n/a',
