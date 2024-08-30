@@ -3,6 +3,13 @@ myenv/
 tmp/
 static/image
 .python-version
+<<<<<<< HEAD
+static/models/
+*.log
+/build/
+=======
+static/models
+>>>>>>> developing
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
