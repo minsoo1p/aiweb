@@ -29,7 +29,17 @@
   <body class="is-preload">
     <!-- Header -->
     <header id="header">
-      <h1><a href="{{ url_for('main') }}">AutoAngle</a></h1>
+      <h1>
+        <a
+          href="{{ url_for('file', project_number=file.project_id) }}"
+          class="fa-solid fa-chevron-left"
+          style="text-decoration: none"
+        ></a>
+        <a href="{{ url_for('file', project_number=file.project_id) }}"
+          >&nbsp;Back To File</a
+        >
+      </h1>
+
       <a href="#menu">Projects</a>
     </header>
 
@@ -258,7 +268,9 @@
                     {% for row in angle_data %}
                     <tr>
                       <td style="width: 7rem">
-                        <a href="#" onclick="changeGlobalId({{ loop.index0 +1 }})"
+                        <a
+                          href="#"
+                          onclick="changeGlobalId({{ loop.index0 +1 }})"
                           >{{ row['image_name'] }}</a
                         >
                       </td>

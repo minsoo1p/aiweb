@@ -56,7 +56,7 @@ const angleMapping = {
 };
 
 var global_id = 1;
-var image_number = image_number
+var image_number = Object.keys(originalImages).length;
 var angleTag = null;
 var currentAngles = {};
 
@@ -64,7 +64,7 @@ var lineobject;
 var rawLines;
 
 function updateGlobalId() {
-  lineObject = lineObjects[global_id]['content'];
+  lineObject = lineObjects[global_id]["content"];
   rawLines = lineProcessing(lineObject);
 }
 
@@ -161,8 +161,7 @@ function updateBackground(targetStage, targetLayer) {
 
   function addSegmentedImage(imageName) {
     if (!segmentSet.has(imageName)) {
-      const segmentedImage =
-        segmentedImages[global_id];
+      const segmentedImage = segmentedImages[global_id];
       if (segmentedImage && segmentedImage[imageName]) {
         selectedSegmentedImages.push({
           src: segmentedImage[imageName],
