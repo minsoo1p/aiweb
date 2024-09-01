@@ -21,26 +21,22 @@ function lineProcessing(lineObject) {
     rawLines["tal_axis"] = lineObject["tal"]["axis"];
     rawLines["tib_axis"] = lineObject["tib"]["axis"];
     rawLines["tib_tangent"] = lineObject["tib"]["tangent"];
-    rawLines["lowest"] = [
-      lineObject["cal"]["lowest"],
-      lineObject["m5"]["lowest"],
-    ];
+    rawLines["lowest"] = [lineObject["cal"]["lowest"], lineObject["m5"]["lowest"]];
   }
   // Foot AP
 
-  const scaleFactor = 528 / 512;
-
-  for (let key in rawLines) {
-    if (rawLines[key] instanceof Array) {
-      rawLines[key] = rawLines[key].map((coord) => {
-        if (coord instanceof Array) {
-          return [coord[0] * scaleFactor, coord[1] * scaleFactor];
-        } else {
-          return coord * scaleFactor;
-        }
-      });
-    }
-  }
+  // const scaleFactor = 528 / 512;
+  // for (let key in rawLines) {
+  //   if (rawLines[key] instanceof Array) {
+  //     rawLines[key] = rawLines[key].map((coord) => {
+  //       if (coord instanceof Array) {
+  //         return [coord[0] * scaleFactor, coord[1] * scaleFactor];
+  //       } else {
+  //         return coord * scaleFactor;
+  //       }
+  //     });
+  //   }
+  // }
 
   return rawLines;
 }
@@ -57,11 +53,11 @@ const angleMapping = {
 
 var global_id = 1;
 var image_number = Object.keys(originalImages).length;
-var angleTag = null;
 var currentAngles = {};
 
 var lineobject;
-var rawLines;
+var rawLines = {};
+var rawLinesExpanded = {};
 
 function updateGlobalId() {
   lineObject = lineObjects[global_id]["content"];
@@ -84,39 +80,33 @@ stage.add(layer);
 var stageLarge, layerLarge;
 
 // Canvas 동기화 함수
-function syncLines(targetLayer, angleTag) {
-  if (!angleTag) {
-    throw new Error("No angle tag provided for synchronization");
+function syncLines(currentLayer) {
+  const line_scaler = currentLayer === layerLarge ? 0.5 : 2;
+
+  if (currentLayer === layerLarge) {
+    for (let key in rawLinesExpanded) {
+      if (rawLinesExpanded[key] instanceof Array) {
+        rawLines[key] = rawLinesExpanded[key].map(line => {
+          return [line[0] * line_scaler, line[1] * line_scaler];
+        });
+      }
+    }
+  } else {
+    for (let key in rawLines) {
+      if (rawLines[key] instanceof Array) {
+        rawLinesExpanded[key] = rawLines[key].map(line => {
+          return [line[0] * line_scaler, line[1] * line_scaler];
+        });
+      }
+    }
   }
 
-  const mapped_lines = angleMapping[angleTag];
-
-  const lines = targetLayer.find("Line");
-  if (lines.length !== 2) {
-    throw new Error(
-      `Expected 2 lines for ${angleTag}, but found ${lines.length}`
-    );
-  }
-
-  const line_scaler = targetLayer === layerLarge ? 0.5 : 1;
-
-  const updatedLines = lines.map((line) => {
-    const points = line.points();
-
-    return [
-      [points[0] * line_scaler, points[1] * line_scaler],
-      [points[2] * line_scaler, points[3] * line_scaler],
-    ];
-  });
-
-  rawLines[mapped_lines[0]] = updatedLines[0];
-  rawLines[mapped_lines[1]] = updatedLines[1];
 }
 
 document
   .getElementById("staticBackdrop")
   .addEventListener("shown.bs.modal", function () {
-    syncLines(layer, angleTag);
+    syncLines(layer);
 
     var containerLarge = document.getElementById("canvasContainerLarge");
     var containerLargeWidth = containerLarge.offsetWidth;
@@ -138,7 +128,7 @@ document
   });
 
 function saveExpandedImage() {
-  syncLines(layerLarge, angleTag);
+  syncLines(layerLarge);
   updateBackground(stage, layer);
   var myModalEl = document.getElementById("staticBackdrop");
   var modal = bootstrap.Modal.getInstance(myModalEl);
@@ -214,8 +204,8 @@ function updateBackground(targetStage, targetLayer) {
   ])
     .then((images) => {
       const canvas = document.createElement("canvas");
-      canvas.width = 528;
-      canvas.height = 528;
+      canvas.width = 512;
+      canvas.height = 512;
       const ctx = canvas.getContext("2d");
 
       // Draw original image at full opacity
@@ -227,8 +217,8 @@ function updateBackground(targetStage, targetLayer) {
       // Process and draw segmented images
       for (let i = 1; i < images.length; i++) {
         const segmentedCanvas = document.createElement("canvas");
-        segmentedCanvas.width = 528;
-        segmentedCanvas.height = 528;
+        segmentedCanvas.width = 512;
+        segmentedCanvas.height = 512;
         const segmentedCtx = segmentedCanvas.getContext("2d");
 
         segmentedCtx.drawImage(
@@ -317,12 +307,6 @@ document.addEventListener("DOMContentLoaded", function () {
 
   angleCheckboxes.forEach((checkbox) => {
     checkbox.addEventListener("change", function () {
-      if (this.checked) {
-        angleTag = this.id;
-      } else {
-        angleTag = null;
-      }
-
       allCheckbox.checked = Array.from(angleCheckboxes).every(
         (cb) => cb.checked
       );
@@ -346,7 +330,7 @@ function updateTableWithAngles() {
 function confirmSave() {
   updateTableWithAngles();
 
-  if (global_id < image_number - 1) {
+  if (global_id < image_number) {
     global_id++;
     updateAllCanvases();
   } else {
@@ -418,7 +402,11 @@ function drawLines(stage, layer) {
 
 function drawLinesForAngle(angle, stage, layer) {
   const mapped_lines = angleMapping[angle];
-  var targetLines = [rawLines[mapped_lines[0]], rawLines[mapped_lines[1]]];
+  if (layer === layerLarge) {
+    var targetLines = [rawLinesExpanded[mapped_lines[0]], rawLinesExpanded[mapped_lines[1]]];
+  } else {
+    var targetLines = [rawLines[mapped_lines[0]], rawLines[mapped_lines[1]]];
+  }
 
   if (lineObject && targetLines) {
     var lines = lineFitting(targetLines, (canvasSize = stage.width()));
@@ -468,44 +456,45 @@ function drawLinesForAngle(angle, stage, layer) {
         konvaLine.points(points);
       }
 
-      function addDragBehavior(shape) {
-        var isDragging = false;
+      // function addDragBehavior(shape) {
+      //   var isDragging = false;
 
-        shape.on("mousedown touchstart", function () {
-          isDragging = true;
-        });
+      //   shape.on("mousedown touchstart", function () {
+      //     isDragging = true;
+      //   });
 
-        shape.on("mouseup touchend", function () {
-          isDragging = false;
-          updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
-          updateBackground(stage, layer);
-        });
+      //   shape.on("mouseup touchend", function () {
+      //     isDragging = false;
+      //     updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
+      //     updateBackground(stage, layer);
+      //   });
 
-        shape.on("dragmove", function () {
-          updateLine();
-          updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
-        });
+      //   shape.on("dragmove", function () {
+      //     updateLine();
+      //     updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
+      //   });
 
-        stage.on("mouseout", function () {
-          if (isDragging) {
-            isDragging = false;
-            updateLineObject(
-              lines,
-              index,
-              konvaLine,
-              group,
-              layer,
-              mapped_lines
-            );
-            updateBackground(stage, layer);
-          }
-        });
-      }
+      //   stage.on("mouseout", function () {
+      //     if (isDragging) {
+      //       isDragging = false;
+      //       updateLineObject(
+      //         lines,
+      //         index,
+      //         konvaLine,
+      //         group,
+      //         layer,
+      //         mapped_lines
+      //       );
+      //       updateBackground(stage, layer);
+      //     }
+      //   });
+      // }
 
       function addDragBehaviorLazy(shape) {
         shape.on("dragmove", function () {
           updateLine();
-          layer.batchDraw();
+          // layer.batchDraw();
+          updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
         });
 
         shape.on("dragend", function () {
@@ -515,8 +504,8 @@ function drawLinesForAngle(angle, stage, layer) {
       }
 
       addDragBehaviorLazy(group);
-      addDragBehavior(startAnchor);
-      addDragBehavior(endAnchor);
+      addDragBehaviorLazy(startAnchor);
+      addDragBehaviorLazy(endAnchor);
 
       startAnchor.on("dragmove", function () {
         updateLine();
@@ -642,10 +631,17 @@ function updateLineObject(lines, index, konvaLine, group, layer, mapped_lines) {
   lines[index].start = { x: points[0] + groupPos.x, y: points[1] + groupPos.y };
   lines[index].end = { x: points[2] + groupPos.x, y: points[3] + groupPos.y };
 
-  rawLines[mapped_lines[index]] = [
-    [lines[index].start.x, lines[index].start.y],
-    [lines[index].end.x, lines[index].end.y],
-  ];
+  if (layer === layerLarge) {
+    rawLinesExpanded[mapped_lines[index]] = [
+      [lines[index].start.x, lines[index].start.y],
+      [lines[index].end.x, lines[index].end.y],
+    ];
+  } else {
+    rawLines[mapped_lines[index]] = [
+      [lines[index].start.x, lines[index].start.y],
+      [lines[index].end.x, lines[index].end.y],
+    ];
+  }
 
   layer.find("Arc").forEach((arc) => arc.destroy());
   layer.find("Text").forEach((text) => text.destroy());
@@ -656,20 +652,37 @@ function updateLineObject(lines, index, konvaLine, group, layer, mapped_lines) {
   }
 }
 
-function lineFitting(lines, canvasSize = 528, margin = 15) {
-  const scale = canvasSize / 528;
+function lineFitting(lines, canvasSize = 512, margin = 15) {
+  // const scale = canvasSize / 512;
+
+  // return lines.map((line) => {
+  //   let start, end, slope;
+
+  //   if (line.length === 2) {
+  //     start = {
+  //       x: line[0][0] * scale,
+  //       y: line[0][1] * scale,
+  //     };
+  //     end = {
+  //       x: line[1][0] * scale,
+  //       y: line[1][1] * scale,
+  //     };
+  //     slope = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]);
+  //   } else {
+  //     throw new Error("The number of points of lines is not 2");
+  //   }
 
   return lines.map((line) => {
     let start, end, slope;
 
     if (line.length === 2) {
       start = {
-        x: line[0][0] * scale,
-        y: line[0][1] * scale,
+        x: line[0][0],
+        y: line[0][1],
       };
       end = {
-        x: line[1][0] * scale,
-        y: line[1][1] * scale,
+        x: line[1][0],
+        y: line[1][1],
       };
       slope = (line[1][1] - line[0][1]) / (line[1][0] - line[0][0]);
     } else {
