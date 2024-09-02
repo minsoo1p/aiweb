@@ -107,6 +107,7 @@
                 <a
                   href="{{ url_for('delete_file', project_number=project_id, file_id=file.id) }}"
                   class="fa-solid fa-square-minus"
+                  style="text-decoration: none;"
                 ></a>
               </td>
               <td>{{ file.name1 }}</td>
@@ -116,22 +117,32 @@
               <td>
                 <div class="inference-container">
                   <a
-                    href="{{ url_for('batch_inference', project_id=project_id, file_id=file.id) }}"
-                    class="button small"
+                    href="#"
+                    class="button run {% if file.status != 'pending' %}disabled{% endif %}"
                     style="height: 3rem; font-size: 0.8rem"
-                    >Run Inference</a
+                    {% if file.status == 'pending' %}onclick="startInference({{ project_id }}, {{ file.id }})"{% endif %}
+                    {% if file.status != 'pending' %}disabled{% endif %}
+                    ><img src="{{ url_for('static', filename='images/play-button2.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;"> Run</a
                   >
-                  <span
-                    class="completed-status {% if file.inference_complete %}visible{% endif %}"
-                    >Completed</span
-                  >
+                  <span id="status-{{ file.id }}" class="status">
+                    {% if file.status == 'processing' %}
+                        <span class="processing"><img src="{{ url_for('static', filename='images/loading.gif') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Processing</span>
+                    {% elif file.status == 'completed' %}
+                        <span class="completed"><img src="{{ url_for('static', filename='images/check.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Completed</span>
+                    {% elif file.status == 'failed' %}
+                        <span class="failed"><img src="{{ url_for('static', filename='images/cross.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Failed</span>
+                    {% endif %}
+                  </span>
                 </div>
               </td>
               <td style="text-align: right">
-                <a
-                  href="{{ url_for('processing', project_id = project_id, file_id = file.id) }}"
-                  class="fa-solid fa-chevron-right"
-                  style="text-decoration: none"
+                <a href="{{ url_for('processing', project_id = project_id, file_id = file.id) }}"
+                id="link-{{ file.id }}"
+                class="fa-solid fa-chevron-right {% if file.status != 'completed' %}disabled-link{% endif %}"
+                style="text-decoration: none;"
+                {% if file.status != 'completed' %}
+                onclick="return false;"
+                {% endif %}
                 ></a>
               </td>
             </tr>
@@ -322,6 +333,75 @@
       });
 
       // JS for angle selection
+    </script>
+    <script>
+      // Javascript for restriction
+      function handleDisabledLinkClick(e) {
+        if (e.currentTarget.classList.contains('disabled-link')) {
+            e.preventDefault();
+            alert('Processing is not completed yet. Please click RUN button and wait until the processing is finished.');
+        }
+      }
+    </script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var Links = document.querySelectorAll('[id^="link-"]');
+        Links.forEach(function(link) {
+            console.log(link);
+            link.addEventListener('click', handleDisabledLinkClick);
+        });
+      });
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+      // Javascript for SocketIO
+      var socket = io();
+    
+      socket.on('connect', function() {
+          console.log('Connected to server');
+      });
+  
+      function startInference(projectId, fileId) {
+        var button = document.querySelector(`a[onclick="startInference(${projectId}, ${fileId})"]`);
+        if (button && !button.classList.contains('disabled')) {
+          socket.emit('start_inference', {'project_id': projectId, 'file_id': fileId});
+          var statusElement = document.getElementById(`status-${fileId}`);
+          statusElement.innerHTML = '<span class="processing"><img src="{{ url_for('static', filename='images/loading.gif') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Processing <span class="progress">0</span>%</span>';
+  
+          button.classList.add('disabled');
+          button.onclick = null;
+        }
+      }
+
+      socket.on('inference_progress', function(data) {
+          var progressElement = document.querySelector(`#status-${data.file_id} .progress`);
+          if (progressElement) {
+              progressElement.textContent = data.progress;
+          }
+      });
+
+      socket.on('inference_complete', function(data) {
+          var statusElement = document.getElementById(`status-${data.file_id}`);
+          var button = document.querySelector(`a[onclick="startInference({{ project_id }}, ${data.file_id})"]`);
+          var link = document.getElementById('link-${data.file_id}');
+
+          if (statusElement) {
+              if (data.status === 'completed') {
+                  statusElement.innerHTML = '<span class="completed"><img src="{{ url_for('static', filename='images/check.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Completed</span>';
+
+                  if (link) {
+                    link.classList.remove('disabled-link');
+                    link.onclick = null;
+                  }
+              } else if (data.status === 'failed') {
+                  statusElement.innerHTML = '<span class="failed"><img src="{{ url_for('static', filename='images/cross.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Failed</span>';
+              }
+          }
+          if (button) {
+            button.classList.add('disabled');
+            button.onclick = null;
+          }
+      });
     </script>
 
     <script src="{{ url_for('static', filename='assets/js/jquery.min.js') }}"></script>

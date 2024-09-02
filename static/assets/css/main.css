@@ -1958,6 +1958,25 @@ button.small,
   font-size: 0.8em;
 }
 
+input[type="submit"].run,
+input[type="reset"].run,
+input[type="button"].run,
+button.run,
+.button.run {
+  font-size: 0.8em;
+  height: 3rem;
+  line-height: 3rem;
+  padding: 0 1.5em;
+  background-color: #4ea3d8;
+  color: #000000 !important;
+  transition: background-color 0.2s ease-in-out;
+  border-radius: 8px;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  font-weight: bold;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
 input[type="submit"].major,
 input[type="reset"].major,
 input[type="button"].major,
@@ -2048,21 +2067,42 @@ button.primary:hover:active,
 .inference-container {
   display: inline-flex;
   align-items: center;
-  gap: 0.5em;
+  gap: 1em;
 }
 
-.completed-status {
-  background-color: #4caf50;
-  color: white;
-  padding: 0.3em 0.5em;
-  border-radius: 3px;
+.status {
+  padding: 0.4em 0.8em;
+  border-radius: 4px;
   font-size: 0.8em;
-  opacity: 0;
-  transition: opacity 0.3s ease;
+  font-weight: bold;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
-.completed-status.visible {
-  opacity: 1;
+.status.processing {
+  background-color: #FFA500;
+  color: white;
+}
+
+.status.completed {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.status.failed {
+  background-color: #FF0000;
+  color: white;
+}
+
+.progress {
+  font-weight: normal;
+}
+
+.disabled-link {
+  color: rgba(128, 128, 128, 0.7);
+  /* cursor: not-allowed; */
+  /* pointer-events: none; */
 }
 
 /* Features */
