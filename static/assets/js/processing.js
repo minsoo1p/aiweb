@@ -42,11 +42,10 @@ function lineProcessing(lineObject) {
 }
 
 const angleMapping = {
-  TibioCalcaneal: ["tib_axis", "cal_tangent"],
-  TaloCalcaneal: ["tal_axis", "cal_tangent"],
+  "TibioCalcaneal": ["tib_axis", "cal_tangent"],
+  "TaloCalcaneal": ["tal_axis", "cal_tangent"],
   "Calcaneal Pitch": ["cal_tangent", "lowest"],
-  Meary: ["m1_axis", "tal_axis"],
-  // 아래 두개는 변경 필요
+  "Meary": ["m1_axis", "tal_axis"],
   // 'Gissane': ['m1_axis', 'tal_axis'],
   // 'Böhler': ['m1_axis', 'tal_axis']
 };
@@ -315,20 +314,21 @@ document.addEventListener("DOMContentLoaded", function () {
   });
 });
 
-function updateTableWithAngles() {
+function updateTableWithAngles(id) {
   let table = document.getElementById("dataTable");
-  let currentRow = table.rows[global_id];
+  let currentRow = table.rows[id];
 
   for (let [key, value] of Object.entries(currentAngles)) {
     let cell = currentRow.querySelector(`td[data-angle="${key}"]`);
-    if (cell) {
-      cell.textContent = value.toFixed(1);
+    let cellValue = cell.getElementsByTagName("span")[0];
+    if (cellValue) {
+      cellValue.textContent = value.toFixed(1);
     }
   }
 }
 
 function confirmSave() {
-  updateTableWithAngles();
+  updateTableWithAngles(global_id);
 
   if (global_id < image_number) {
     global_id++;
@@ -343,61 +343,57 @@ function saveAndExportData() {
   let data = [];
 
   for (let i = 1; i < table.rows.length; i++) {
-    let row = table.rows[i];
-    let rowData = {
-      id: row.getAttribute("data-id"),
-      image_name: row.cells[0].textContent,
-    };
-
-    for (let j = 1; j < row.cells.length; j++) {
-      let cell = row.cells[j];
-      let angleType = cell.getAttribute("data-angle");
-      rowData[angleType] = parseFloat(cell.textContent) || null;
-    }
-
-    data.push(rowData);
+      let row = table.rows[i];
+      let rowData = {
+          image_name: row.cells[0].textContent,
+          tibioCalaneal: row.cells[1].getElementsByTagName("span")[0].textContent,
+          taloCalcaneal: row.cells[2].getElementsByTagName("span")[0].textContent,
+          calcanealPitch: row.cells[3].getElementsByTagName("span")[0].textContent,
+          Meary: row.cells[4].getElementsByTagName("span")[0].textContent
+      };
+      data.push(rowData);
   }
 
-  fetch("/save_data_table", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(data),
+  fetch(`/save_and_download/${file.id}`, {
+      method: "POST",
+      headers: {
+          "Content-Type": "application/json",
+      },
+      body: JSON.stringify(data),
   })
-    .then((response) => response.json())
-    .then((data) => {
-      if (data.success) {
-        alert("Data saved successfully!");
-      } else {
-        alert("Error saving data.");
+  .then(response => {
+      if (response.ok) {
+          return response.blob();
       }
-    })
-    .catch((error) => {
+      throw new Error('Network response was not ok.');
+  })
+  .then(blob => {
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = 'angles.csv';
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+  })
+  .catch((error) => {
       console.error("Error:", error);
-      alert("Error saving data.");
-    });
+      alert("Error saving and exporting data.");
+  });
 }
 
 // Draw lines
 function drawLines(stage, layer) {
   layer.find("Group").forEach((group) => group.destroy());
 
-  // const angle_list = ['TibioCalcaneal', 'TaloCalcaneal', 'Calcaneal Pitch', 'Meary', 'Gissane', 'Böhler'];
-  const angle_list = [
-    "TibioCalcaneal",
-    "TaloCalcaneal",
-    "Calcaneal Pitch",
-    "Meary",
-  ];
-
-  angle_list.forEach((angle) => {
+  Object.keys(angleMapping).forEach((angle) => {
     if (document.getElementById(angle).checked) {
       drawLinesForAngle(angle, stage, layer);
     }
   });
 
-  updateTableWithAngles();
+  updateTableWithAngles(global_id);
 }
 
 function drawLinesForAngle(angle, stage, layer) {
@@ -792,14 +788,35 @@ function updateAllCanvases() {
   updateSelectedRow();
 }
 
+function calculateAngleOnly(id) {
+  global_id = id;
+  updateGlobalId();
+  
+  Object.keys(angleMapping).forEach((angle) => {
+    const mapped_lines = angleMapping[angle];
+    var targetLines = [rawLines[mapped_lines[0]], rawLines[mapped_lines[1]]];
+    if (rawLines && targetLines) {
+      var lines = lineFitting(targetLines);
+    }
+    var angleValue = calculateAngleBetweenLines(lines[0], lines[1]);
+    currentAngles[angle] = parseFloat(angleValue);
+  })
+  updateTableWithAngles(id);
+}
+
 window.onload = function () {
   document.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
     checkbox.checked = true;
   });
 
+  for (let id=1; id <= image_number; id++) {
+    calculateAngleOnly(id);
+  }
+  global_id = 1;
+  currentAngles = {};
+
   updateGlobalId();
   updateBackground(stage, layer);
-  updateTableWithAngles();
   updateSelectedRow();
 };
 
