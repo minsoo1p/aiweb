@@ -18,8 +18,9 @@ from werkzeug.utils import secure_filename
 
 from datetime import datetime
 
-from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, send_from_directory, flash
+from flask import Flask, render_template, redirect, url_for, request, flash, jsonify, send_from_directory, flash, send_file
 from flask_bootstrap import Bootstrap5
+from flask_socketio import SocketIO, emit
 from datetime import datetime
 
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -47,6 +48,7 @@ app = Flask(__name__)
 app_key = os.getenv('APP_KEY')
 hash_method = os.getenv('HASH')
 salt = int(os.getenv('SALT'))
+socketio = SocketIO(app)
 app.config['SECRET_KEY'] = app_key
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
 app.config['UPLOAD_FOLDER'] = 'static/image'
@@ -81,7 +83,7 @@ class File(db.Model):
     image_number = db.Column(db.Integer)
     file_time = db.Column(db.String(100))
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
-    inference_complete = db.Column(db.Boolean, default=False)
+    status = db.Column(db.String, default='pending')
     
 # class DataTable(db.Model):
 #     __tablename__ = 'data_table'
@@ -265,9 +267,8 @@ def file(project_number):
         db.session.add(new_file)
         db.session.commit()
         files = File.query.filter_by(project_id=project_number).all()
-        data_tables = db.relationship('DataTable', backref='file', lazy=True)
 
-        return render_template('file.html', projects=projects, files=files, project_id=project_number)
+        return redirect(url_for('file', project_number=project_number))
     return render_template('file.html', projects=projects, files=files, project_id=project_number)
 
 @app.route('/delete_file/<int:project_number>/<int:file_id>', methods=['GET'])
@@ -477,22 +478,27 @@ def processing(project_id, file_id):
                            line_objects=json.dumps(line_objects),
                            angle_data=angle_data)
 
-# # Processing page에서 'save and export data' 버튼 누르면 변경된 데이터를 저장
-# @app.route("/save_data_table", methods=['POST'])
-# @login_required
-# def save_data_table():
-#     data = request.json
-#     for row in data:
-#         data_table = DataTable.query.filter_by(image_name=row['image_name']).first()
-#         for key, value in row.items():
-#             if key != ('id' or 'image_name') and hasattr(data_table, key):
-#                 setattr(data_table, key, value)
-#     db.session.commit()
-#     return jsonify({"success": True})
+# Processing page에서 'save and export data' 버튼 누르면 변경된 데이터를 저장
+@app.route('/save_and_download/<int:file_id>', methods=['POST'])
+@login_required
+def save_and_download(file_id):
+    file = File.query.get(file_id)
+    if not file:
+        return jsonify({'error': 'File not found'}), 404
 
-# @app.route("/angles", methods=['GET', 'POST'])
-# def angles():
-#     return render_template('angles.html')
+    data = request.json
+    csv_file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data, 'Processed', 'angles.csv')
+
+    # Update CSV file
+    with open(csv_file_path, 'w', newline='') as csvfile:
+        fieldnames = ['image_name', 'tibioCalaneal', 'taloCalcaneal', 'calcanealPitch', 'Meary']
+        writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in data:
+            writer.writerow(row)
+
+    # Send file for download
+    return send_file(csv_file_path, as_attachment=True, attachment_filename='angles.csv')
 
 class NumpyEncoder(json.JSONEncoder):
     def default(self, obj):
@@ -504,25 +510,37 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return super(NumpyEncoder, self).default(obj)
 
+@socketio.on('connect')
+def test_connect():
+    emit('my response', {'data': 'Connected'})
+
 @tf.function
-@app.route("/batch_inference/<int:project_id>/<int:file_id>")
-@login_required
-def batch_inference(project_id, file_id):
+@login_required    
+@socketio.on('start_inference')
+def batch_inference(data):
+    project_id = data['project_id']
+    file_id = data['file_id']
     file = File.query.get(file_id)
     
     if file and file.project_id == project_id:
-        image_folder = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
-        seg = foot_lateral_segmentation('m1', 'm5', 'cal', 'tal', 'tib')
-        
-        #CSV creation
-        fieldnames = ['image_name', 'tibioCalaneal', 'taloCalcaneal', 'calcanealPitch', 'Meary']
-        csv_file_path = os.path.join(image_folder, 'Processed', f'angles.csv')
-        with open(csv_file_path, 'w', newline='') as csvfile:
-            writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
-            writer.writeheader()
+        try:
+            image_folder = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
+            seg = foot_lateral_segmentation('m1', 'm5', 'cal', 'tal', 'tib')
+            #total processing count
+            image_number = len([f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'))])
+            total_process = image_number * 7
+            count = 0
+            file.status = 'processing'
+            db.session.commit()
             
-            for index, image_file in enumerate(sorted(os.listdir(image_folder))):
-                if image_file.lower().endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG')):
+            #CSV creation
+            fieldnames = ['image_name', 'tibioCalaneal', 'taloCalcaneal', 'calcanealPitch', 'Meary']
+            csv_file_path = os.path.join(image_folder, 'Processed', f'angles.csv')
+            with open(csv_file_path, 'w', newline='') as csvfile:
+                writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
+                writer.writeheader()
+                
+                for index, image_file in enumerate(sorted([f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'))])):
                     full_image_path = os.path.join(image_folder, image_file)
                     image = Image.open(full_image_path)
                     root, ext = os.path.splitext(image_file)
@@ -530,6 +548,8 @@ def batch_inference(project_id, file_id):
                     original, masks = seg.segmentation(image)
 
                     seg.to_JPG(original, os.path.join(image_folder, 'Processed', f'{index+1}_{root}_original{ext}'))
+                    count += 1
+                    socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/total_process * 100, 1)})
                     
                     clean_mask = Cleaning_contour()
                     cleaned_masks = {}
@@ -541,60 +561,41 @@ def batch_inference(project_id, file_id):
 
                         output_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{input}{ext}')
                         seg.to_JPG(cleaned_masks[input],output_path)
+                        count += 1
+                        socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/total_process * 100, 1)})
 
                     post_data = Post_processing(cleaned_masks)
                     data = post_data.postProcess()
+                    count += 1
+                    socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/total_process * 100, 1)})
 
                     file_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_postline.json')
                     with open(file_path, 'w') as json_file:
                         json.dump(data, json_file, cls=NumpyEncoder, indent=4)
                         
                     writer.writerow({
-                        'image_name': f'{index+1}.{root}',
+                        'image_name': root,
                         'tibioCalaneal': 'n/a',
                         'taloCalcaneal': 'n/a',
                         'calcanealPitch': 'n/a',
                         'Meary': 'n/a'
                     })
-        
-        file.inference_complete = True
-        db.session.commit()
-        
-        print('Batch inference completed successfully for the selected file.')
+            
+            file.status = 'completed'
+            db.session.commit()
+            socketio.emit('inference_complete', {'file_id': file_id, 'status': 'completed'})
+            
+            print('Batch inference completed successfully for the selected file.')
+            
+        except Exception as e:
+            print(f"Error processing image: {e}")
+            file.status = 'failed'
+            db.session.commit()
+            emit('inference_complete', {'file_id': file_id, 'status': 'failed'})
     else:
         print('Invalid file or permission denied.')
     
     return redirect(url_for('file', project_number=project_id))
-
-# @app.route("/inference/<int:image_id>")
-# @login_required
-# def single_inference(image_id):
-#     file = File.query.get(image_id)
-    
-#     if file and file.user_id == current_user.id:
-#         image_folder = os.path.join('static', 'image', file.image_data)
-#         original_folder = os.path.join(image_folder, 'original')
-#         segmented_folder = os.path.join(image_folder, 'segmented')
-#         lines_folder = os.path.join(image_folder, 'lines')
-        
-#         os.makedirs(segmented_folder, exist_ok=True)
-#         os.makedirs(lines_folder, exist_ok=True)
-        
-#         for image_file in os.listdir(original_folder):
-#             if image_file.lower().endswith(('.png', '.jpg', '.jpeg')):
-#                 original_path = os.path.join(original_folder, image_file)
-#                 segmented_path = os.path.join(segmented_folder, f"segmented_{image_file}")
-#                 line_objects_path = os.path.join(lines_folder, f"{os.path.splitext(image_file)[0]}_lines.json")
-                
-#                 model_inference(original_path, segmented_path)
-#                 postprocessing_inference(original_path, segmented_path, line_objects_path)
-        
-#         flash('Inference completed successfully for the selected image.')
-#     else:
-#         flash('Invalid image or permission denied.')
-    
-#     return redirect(url_for('project'))
-
 
 if __name__ == '__main__':
     app.run(debug=True)
