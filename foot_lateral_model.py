@@ -74,7 +74,7 @@ class foot_lateral_segmentation :
 
 # # 사용하는 방식
 
-# path = 'static/image/f7048e8e-0f9d-499b-905c-08bd191d0798\KakaoTalk_20240807_213239161_02.jpg'
+# path = 'static\images\KakaoTalk_20240807_213239161_03.jpg'
 
 # seg = foot_lateral_segmentation('cal')
 # image = seg.preprocess(path)
