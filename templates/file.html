@@ -42,11 +42,6 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='assets/css/main.css') }}"
     />
-    <link
-      href="https://cdn.jsdelivr.net/npm/selectize@0.12.6/dist/css/selectize.default.css"
-      rel="stylesheet"
-    />
-    <script src="https://cdn.jsdelivr.net/npm/selectize@0.12.6/dist/js/standalone/selectize.min.js"></script>
   </head>
   <body class="is-preload">
     <!-- Header -->
@@ -107,6 +102,7 @@
                 <a
                   href="{{ url_for('delete_file', project_number=project_id, file_id=file.id) }}"
                   class="fa-solid fa-square-minus"
+                  style="text-decoration: none;"
                 ></a>
               </td>
               <td>{{ file.name1 }}</td>
@@ -116,22 +112,32 @@
               <td>
                 <div class="inference-container">
                   <a
-                    href="{{ url_for('batch_inference', project_id=project_id, file_id=file.id) }}"
-                    class="button small"
+                    href="#"
+                    class="button run {% if file.status != 'pending' %}disabled{% endif %}"
                     style="height: 3rem; font-size: 0.8rem"
-                    >Run Inference</a
+                    {% if file.status == 'pending' %}onclick="startInference({{ project_id }}, {{ file.id }})"{% endif %}
+                    {% if file.status != 'pending' %}disabled{% endif %}
+                    ><img src="{{ url_for('static', filename='images/play-button2.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;"> Run</a
                   >
-                  <span
-                    class="completed-status {% if file.inference_complete %}visible{% endif %}"
-                    >Completed</span
-                  >
+                  <span id="status-{{ file.id }}" class="status">
+                    {% if file.status == 'processing' %}
+                        <span class="processing"><img src="{{ url_for('static', filename='images/loading.gif') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Processing</span>
+                    {% elif file.status == 'completed' %}
+                        <span class="completed"><img src="{{ url_for('static', filename='images/check.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Completed</span>
+                    {% elif file.status == 'failed' %}
+                        <span class="failed"><img src="{{ url_for('static', filename='images/cross.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Failed</span>
+                    {% endif %}
+                  </span>
                 </div>
               </td>
               <td style="text-align: right">
-                <a
-                  href="{{ url_for('processing', project_id = project_id, file_id = file.id) }}"
-                  class="fa-solid fa-chevron-right"
-                  style="text-decoration: none"
+                <a href="{{ url_for('processing', project_id = project_id, file_id = file.id) }}"
+                id="link-{{ file.id }}"
+                class="fa-solid fa-chevron-right {% if file.status != 'completed' %}disabled-link{% endif %}"
+                style="text-decoration: none;"
+                {% if file.status != 'completed' %}
+                onclick="return false;"
+                {% endif %}
                 ></a>
               </td>
             </tr>
@@ -152,7 +158,7 @@
             <div class="row">
               <div class="col-2 col-12-xsmall">
                 <select name="location" id="location">
-                  <option value="">Location</option>
+                  <option value="" selected disabled hidden>Location</option>
                   <option value="Foot">Foot</option>
                   <option value="Ankle">Ankle</option>
                   <option value="Knee">Knee</option>
@@ -168,7 +174,7 @@
 
               <div class="col-2 col-12-xsmall">
                 <select name="view" id="view">
-                  <option value="">Type Of Image</option>
+                  <option value="" selected disabled hidden>Type Of Image</option>
                   <option value="AnteroPosterior">AnteroPosterior</option>
                   <option value="Lateral">Lateral</option>
                   <option value="Translateral">Translateral</option>
@@ -185,6 +191,33 @@
                   </option>
                 </select>
               </div>
+
+              <div class="col-2 col-12-xsmall">
+                <div class="multiselect-dropdown">
+                  <div class="select-box" onclick="toggleDropdown()">
+                      <select>
+                          <option>Select options</option>
+                      </select>
+                      <div class="over-select"></div>
+                  </div>
+              
+                  <div id="checkboxes" class="checkboxes">
+                      <label for="option1">
+                          <input type="checkbox" id="option1" />Option 1
+                      </label>
+                      <label for="option2">
+                          <input type="checkbox" id="option2" />Option 2
+                      </label>
+                      <label for="option3">
+                          <input type="checkbox" id="option3" />Option 3
+                      </label>
+                      <label for="option4">
+                          <input type="checkbox" id="option4" />Option 4
+                      </label>
+                  </div>
+                </div>
+              </div>
+
             </div>
 
             <div class="row" style="padding-top: 0.7rem">
@@ -317,11 +350,109 @@
       document.getElementById("upload-form").addEventListener("submit", (e) => {
         if (fileInput.files.length === 0) {
           e.preventDefault();
-          alert("Please t least one file.");
+          alert("Please upload at least one file.");
         }
       });
+    </script>
+    <script>
+      let expanded = false;  // 전역 범위에 변수 선언
 
-      // JS for angle selection
+      function toggleDropdown() {
+          const checkboxes = document.getElementById("checkboxes");
+          if (!expanded) {
+              checkboxes.style.display = "block";
+              expanded = true;
+          } else {
+              checkboxes.style.display = "none";
+              expanded = false;
+          }
+      }
+
+      document.addEventListener("click", function (event) {
+          const dropdown = document.querySelector(".multiselect-dropdown");
+          if (!dropdown.contains(event.target)) {
+              document.getElementById("checkboxes").style.display = "none";
+              expanded = false;
+          }
+      });
+    </script>
+    <script>
+      // Javascript for restriction
+      function handleDisabledLinkClick(e) {
+        if (e.currentTarget.classList.contains('disabled-link')) {
+            e.preventDefault();
+            alert('Processing is not completed yet. Please click RUN button and wait until the processing is finished.');
+        }
+      }
+    </script>
+    <script>
+      document.addEventListener('DOMContentLoaded', function() {
+        var Links = document.querySelectorAll('[id^="link-"]');
+        Links.forEach(function(link) {
+            link.addEventListener('click', handleDisabledLinkClick);
+        });
+
+        var pageLoadType = performance.getEntriesByType("navigation")[0].type;
+        console.log(pageLoadType);
+
+        // 뒤로가기로 돌아온 경우 0.01초 후에 새로고침
+        if (pageLoadType === 'back_forward') {
+            setTimeout(function() {
+              location.reload();
+            }, 10);
+        }
+      })
+    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
+    <script>
+      // Javascript for SocketIO
+      var socket = io();
+    
+      socket.on('connect', function() {
+          console.log('Connected to server');
+      });
+  
+      function startInference(projectId, fileId) {
+        var button = document.querySelector(`a[onclick="startInference(${projectId}, ${fileId})"]`);
+        if (button && !button.classList.contains('disabled')) {
+          socket.emit('start_inference', {'project_id': projectId, 'file_id': fileId});
+          var statusElement = document.getElementById(`status-${fileId}`);
+          statusElement.innerHTML = '<span class="processing"><img src="{{ url_for('static', filename='images/loading.gif') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Processing <span class="progress">0</span>%</span>';
+  
+          button.classList.add('disabled');
+          button.onclick = null;
+        }
+      }
+
+      socket.on('inference_progress', function(data) {
+          var progressElement = document.querySelector(`#status-${data.file_id} .progress`);
+          if (progressElement) {
+              progressElement.textContent = data.progress;
+          }
+      });
+
+      socket.on('inference_complete', function(data) {
+          var statusElement = document.getElementById(`status-${data.file_id}`);
+          var button = document.querySelector(`a[onclick="startInference({{ project_id }}, ${data.file_id})"]`);
+          var link = document.getElementById(`link-${data.file_id}`);
+
+          if (statusElement) {
+              if (data.status === 'completed') {
+                  statusElement.innerHTML = '<span class="completed"><img src="{{ url_for('static', filename='images/check.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Completed</span>';
+
+                  if (link) {
+                    link.classList.remove('disabled-link');
+                    link.onclick = null;
+                  }
+              } else if (data.status === 'failed') {
+                  statusElement.innerHTML = '<span class="failed"><img src="{{ url_for('static', filename='images/cross.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Failed</span>';
+              }
+          }
+          if (button) {
+            button.classList.add('disabled');
+            button.onclick = null;
+          }
+      });
     </script>
 
     <script src="{{ url_for('static', filename='assets/js/jquery.min.js') }}"></script>
