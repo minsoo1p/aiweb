@@ -533,6 +533,9 @@ def batch_inference(data):
             file.status = 'processing'
             db.session.commit()
             
+            # test용 error code
+            # raise ValueError()
+            
             #CSV creation
             fieldnames = ['image_name', 'tibioCalaneal', 'taloCalcaneal', 'calcanealPitch', 'Meary']
             csv_file_path = os.path.join(image_folder, 'Processed', f'angles.csv')

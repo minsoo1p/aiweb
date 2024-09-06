@@ -37,6 +37,19 @@
         font-size: 1rem;
         color: #888888;
       }
+
+      .rotate {
+        animation: spin 2s linear infinite; 
+      }
+  
+      @keyframes spin {
+        0% {
+          transform: rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg);
+        }
+      }
     </style>
     <link
       rel="stylesheet"
@@ -111,21 +124,24 @@
               <td>{{ file.file_time }}</td>
               <td>
                 <div class="inference-container">
+                  <span>
+                    
+                  </span>
                   <a
                     href="#"
                     class="button run {% if file.status != 'pending' %}disabled{% endif %}"
                     style="height: 3rem; font-size: 0.8rem"
                     {% if file.status == 'pending' %}onclick="startInference({{ project_id }}, {{ file.id }})"{% endif %}
                     {% if file.status != 'pending' %}disabled{% endif %}
-                    ><img src="{{ url_for('static', filename='images/play-button2.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;"> Run</a
+                    ><i class="fa-solid fa-circle-play fa-lg"></i> Run</a
                   >
                   <span id="status-{{ file.id }}" class="status">
                     {% if file.status == 'processing' %}
-                        <span class="processing"><img src="{{ url_for('static', filename='images/loading.gif') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Processing</span>
+                        <span class="processing"><i class="fa-solid fa-spinner fa-lg rotate"></i> Processing</span>
                     {% elif file.status == 'completed' %}
-                        <span class="completed"><img src="{{ url_for('static', filename='images/check.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Completed</span>
+                        <span class="completed"><i class="fa-regular fa-circle-check fa-xl" style="color: #63E6BE;"></i> Completed</span>
                     {% elif file.status == 'failed' %}
-                        <span class="failed"><img src="{{ url_for('static', filename='images/cross.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Failed</span>
+                        <span class="failed"><i class="fa-regular fa-circle-xmark fa-xl" style="color: #ff0000;"></i> Failed</span>
                     {% endif %}
                   </span>
                 </div>
@@ -221,7 +237,7 @@
             </div>
 
             <div class="row" style="padding-top: 0.7rem">
-              <div class="col-6">
+              <div class="col-6 col-12-xsmall">
                 <div id="dropzone" class="dropzone">
                   파일을 마우스로 끌어 오세요
                 </div>
@@ -417,7 +433,7 @@
         if (button && !button.classList.contains('disabled')) {
           socket.emit('start_inference', {'project_id': projectId, 'file_id': fileId});
           var statusElement = document.getElementById(`status-${fileId}`);
-          statusElement.innerHTML = '<span class="processing"><img src="{{ url_for('static', filename='images/loading.gif') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Processing <span class="progress">0</span>%</span>';
+          statusElement.innerHTML = '<span class="processing"><i class="fa-solid fa-spinner fa-lg rotate"></i> Processing <span class="progress">0</span>%</span>';
   
           button.classList.add('disabled');
           button.onclick = null;
@@ -438,14 +454,14 @@
 
           if (statusElement) {
               if (data.status === 'completed') {
-                  statusElement.innerHTML = '<span class="completed"><img src="{{ url_for('static', filename='images/check.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Completed</span>';
+                  statusElement.innerHTML = '<span class="completed"><i class="fa-regular fa-circle-check fa-xl" style="color: #63E6BE;"></i> Completed</span>';
 
                   if (link) {
                     link.classList.remove('disabled-link');
                     link.onclick = null;
                   }
               } else if (data.status === 'failed') {
-                  statusElement.innerHTML = '<span class="failed"><img src="{{ url_for('static', filename='images/cross.png') }}" alt="Icon" style="width: 1.5rem; height: 1.5rem; vertical-align: middle; margin-right: 0.5rem;">Failed</span>';
+                  statusElement.innerHTML = '<span class="failed"><i class="fa-regular fa-circle-xmark fa-xl" style="color: #ff0000;"></i> Failed</span>';
               }
           }
           if (button) {
