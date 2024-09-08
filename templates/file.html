@@ -24,18 +24,30 @@
       }
 
       .dropzone {
+        position: relative;
         border: 2px dashed #cccccc;
-        border-radius: 8px; /* 모서리가 둥글게 설정 */
-        padding: 20px;
-        width: 50rem;
-        height: 100px;
+        border-radius: 8px;
+        padding: 0.5rem;
+        width: 100%;
+        height: 10rem;
         display: flex;
+        flex-direction: column;
         align-items: center;
         justify-content: center;
         text-align: center;
-        margin-right: 10px;
+        margin-right: 0rem;
         font-size: 1rem;
         color: #888888;
+      }
+
+      .file-list {
+          position: absolute;
+          top: 0.2rem;
+          left: 0.2rem;
+          text-align: start;
+          width: 95%;
+          height: 95%;
+          overflow: auto;
       }
 
       .rotate {
@@ -105,6 +117,8 @@
               <th>Type</th>
               <th>Number of Images</th>
               <th>Last Updated</th>
+              <th>Angles</th>
+              <th style="width: 8rem"></th>
               <th style="width: 2rem"></th>
             </tr>
           </thead>
@@ -122,6 +136,11 @@
               <td>{{ file.name2 }}</td>
               <td>{{ file.image_number }}</td>
               <td>{{ file.file_time }}</td>
+              <td style="padding: 0.5em 0.5em; vertical-align:middle;">
+                {% for angle in file.selected_angles %}
+                <ul style="font-size: 10pt; margin: 0;">{{ angle }}</ul>
+                {% endfor %}
+              </td>
               <td>
                 <div class="inference-container">
                   <span>
@@ -172,8 +191,8 @@
         >
           <div class="container">
             <div class="row">
-              <div class="col-2 col-12-xsmall">
-                <select name="location" id="location">
+              <div class="col-3 col-8-small" style="min-width: 16rem;">
+                <select name="location" id="location" required>
                   <option value="" selected disabled hidden>Location</option>
                   <option value="Foot">Foot</option>
                   <option value="Ankle">Ankle</option>
@@ -188,8 +207,8 @@
                 </select>
               </div>
 
-              <div class="col-2 col-12-xsmall">
-                <select name="view" id="view">
+              <div class="col-3 col-8-small" style="min-width: 16rem;">
+                <select name="view" id="view" required>
                   <option value="" selected disabled hidden>Type Of Image</option>
                   <option value="AnteroPosterior">AnteroPosterior</option>
                   <option value="Lateral">Lateral</option>
@@ -208,8 +227,8 @@
                 </select>
               </div>
 
-              <div class="col-2 col-12-xsmall">
-                <div class="multiselect-dropdown" style="width: 100%; height: 100%;">
+              <div class="col-3 col-8-small" style="min-width: 16rem;">
+                <div class="multiselect-dropdown">
                   <div class="select-box" onclick="toggleDropdown()">
                       <select>
                           <option>Select Angles</option>
@@ -219,56 +238,57 @@
               
                   <div id="checkboxes" class="checkboxes">
                       <label for="option1">
-                          <input type="checkbox" id="option1" />&nbsp; Angle 1
+                          <input type="checkbox" id="option1" name="angles" value="TibioCalcaneal Angle" checked/>TibioCalcaneal Angle
                       </label>
                       <label for="option2">
-                          <input type="checkbox" id="option2" />&nbsp; Angle 2
+                          <input type="checkbox" id="option2" name="angles" value="TaloCalcaneal Angle" checked/>TaloCalcaneal Angle
                       </label>
                       <label for="option3">
-                          <input type="checkbox" id="option3" />&nbsp; Angle 3
+                          <input type="checkbox" id="option3" name="angles" value="Calcaneal Pitch" checked/>Calcaneal Pitch
                       </label>
                       <label for="option4">
-                          <input type="checkbox" id="option4" />&nbsp; Angle 4
+                          <input type="checkbox" id="option4" name="angles" value="Meary's Angle" checked/>Meary's Angle
                       </label>
                   </div>
                 </div>
               </div>
 
+              <div class="col-3"></div>
+
             </div>
 
-            <div class="row" style="padding-top: 0.7rem">
-              <div class="col-6 col-12-xsmall">
+            <div class="row" style="padding-top: 0.7rem; align-items: flex-end;">
+              <div class="col-3 col-8-small" style="min-width: 16rem;">
                 <div id="dropzone" class="dropzone">
-                  파일을 마우스로 끌어 오세요
+                  <div><i class="fa-solid fa-upload" style="color: #4ea3d8;"></i></div>
+                  <div style="padding-top: 0.5rem;">Drag & Drop Files Here<br>or</div>
+                  <div>
+                    <input type="file" name="files[]" id="file-input" accept="image/*" multiple style="display: none;" />
+                    <button type="button" id="file-upload-btn" class="button primary">Browse Files</button>
+                  </div>
+
                 </div>
               </div>
-              <div
-                class="col-2 col-12-xsmall"
-                style="
-                  display: flex;
-                  flex-direction: column;
-                  justify-content: flex-end;
-                "
-              >
-                <input
-                  type="file"
-                  name="files[]"
-                  id="file-input"
-                  accept="image/*"
-                  multiple
-                />
+
+              <div class="col-6 col-8-small" style="min-width: 32rem">
+                <div class="dropzone">
+                  <div id="file-list" class="file-list"></div>
+                </div>
               </div>
-              <div class="col-1 col-12-xsmall"></div>
+
               <div
-                class="col-3 col-12-xsmall"
+                class="col-3 col-4-small"
                 style="
                   display: flex;
                   flex-direction: column;
                   justify-content: flex-end;
+                  min-width: 16rem;
+                  padding-top: 1rem;
                 "
               >
                 <button
                   type="submit"
+                  id="upload-form"
                   class="button primary icon solid fa-download"
                 >
                   Upload Files
@@ -343,10 +363,22 @@
     </footer>
 
     <!-- Scripts -->
+
     <script>
       // JavaScript for handling drag and drop
       const dropzone = document.getElementById("dropzone");
       const fileInput = document.getElementById("file-input");
+      const fileUploadBtn = document.getElementById("file-upload-btn");
+      const fileList = document.getElementById("file-list");
+
+      function updateFileList() {
+        fileList.innerHTML = "";
+        for (let file of fileInput.files) {
+          const fileItem = document.createElement("div");
+          fileItem.textContent = file.name;
+          fileList.appendChild(fileItem);
+        }
+      } 
 
       dropzone.addEventListener("dragover", (e) => {
         e.preventDefault();
@@ -361,7 +393,24 @@
         e.preventDefault();
         dropzone.classList.remove("dragover");
         fileInput.files = e.dataTransfer.files;
+        updateFileList();
       });
+
+      document.addEventListener("drop", (e) => {
+        if (!dropzone.contains(e.target)) {
+          e.preventDefault();
+        }
+      });
+
+      document.addEventListener("dragover", (e) => {
+        e.preventDefault();
+      });
+
+      fileUploadBtn.addEventListener("click", () => {
+        fileInput.click();
+      });
+
+      fileInput.addEventListener("change", updateFileList);
 
       document.getElementById("upload-form").addEventListener("submit", (e) => {
         if (fileInput.files.length === 0) {
@@ -371,7 +420,7 @@
       });
     </script>
     <script>
-      let expanded = false;  // 전역 범위에 변수 선언
+      let expanded = false;
 
       function toggleDropdown() {
           const checkboxes = document.getElementById("checkboxes");

@@ -2,6 +2,8 @@
 // console.log(segmentedImages);
 // console.log(lineObjects);
 
+const selectedAngles = file.selected_angles;
+
 // Define mapping as constant
 const segmentColors = {
   cal: { r: 255, g: 0, b: 0 }, // Red
@@ -11,56 +13,70 @@ const segmentColors = {
   m5: { r: 255, g: 0, b: 255 }, // Magenta
 };
 
-function lineProcessing(lineObject) {
-  var rawLines = [];
-
-  // Foot Lateral
-  if ((file.name1 === "Foot") & (file.name2 === "Lateral")) {
-    rawLines["m1_axis"] = lineObject["m1"]["axis"];
-    rawLines["cal_tangent"] = lineObject["cal"]["tangent"];
-    rawLines["tal_axis"] = lineObject["tal"]["axis"];
-    rawLines["tib_axis"] = lineObject["tib"]["axis"];
-    rawLines["tib_tangent"] = lineObject["tib"]["tangent"];
-    rawLines["lowest"] = [lineObject["cal"]["lowest"], lineObject["m5"]["lowest"]];
-  }
-  // Foot AP
-
-  // const scaleFactor = 528 / 512;
-  // for (let key in rawLines) {
-  //   if (rawLines[key] instanceof Array) {
-  //     rawLines[key] = rawLines[key].map((coord) => {
-  //       if (coord instanceof Array) {
-  //         return [coord[0] * scaleFactor, coord[1] * scaleFactor];
-  //       } else {
-  //         return coord * scaleFactor;
-  //       }
-  //     });
-  //   }
-  // }
-
-  return rawLines;
-}
-
-const angleMapping = {
-  "TibioCalcaneal": ["tib_axis", "cal_tangent"],
-  "TaloCalcaneal": ["tal_axis", "cal_tangent"],
-  "Calcaneal Pitch": ["cal_tangent", "lowest"],
-  "Meary": ["m1_axis", "tal_axis"],
-  // 'Gissane': ['m1_axis', 'tal_axis'],
-  // 'Böhler': ['m1_axis', 'tal_axis']
-};
-
 var global_id = 1;
 var image_number = Object.keys(originalImages).length;
 var currentAngles = {};
 
-var lineobject;
+var lineObject;
 var rawLines = {};
 var rawLinesExpanded = {};
 
+const angleMapping = {
+  // Foot Lateral
+  'TibioCalcaneal Angle': ['tib_axis', 'cal_tangent'],
+  'TaloCalcaneal Angle': ['tal_axis', 'cal_tangent'],
+  'Calcaneal Pitch': ['cal_tangent', 'lowest'],
+  "Meary's Angle": ['tal_axis', 'm1_axis'],
+
+}
+
+function lineObject_to_rawLines(line_tags, rawLines, lineObject) {
+  line_tags.forEach((tag) =>{
+      switch (tag) {
+          case 'm1_axis':
+              rawLines[tag] = lineObject["m1"]["axis"];
+              break;
+          case 'cal_tangent':
+              rawLines[tag] = lineObject["cal"]["tangent"];
+              break;
+          case 'tal_axis':
+              rawLines[tag] = lineObject["tal"]["axis"];
+              break;
+          case 'tib_axis':
+              rawLines[tag] = lineObject["tib"]["axis"];
+              break;
+          case 'tib_tangent':
+              rawLines[tag] = lineObject["tib"]["tangent"];
+              break;
+          case 'lowest':
+              rawLines[tag] = [lineObject["cal"]["lowest"], lineObject["m5"]["lowest"]];
+              break;
+          default:
+              console.error('non available line_tag of selected angle');
+      }
+  })
+}
+
+function lineProcessing(lineObject) {
+  let line_tags = new Set();
+  selectedAngles.forEach(function (selectedAngle) {
+    angleMapping[selectedAngle].forEach(tag => line_tags.add(tag));
+  })
+  lineObject_to_rawLines(line_tags, rawLines, lineObject);
+
+// if ((file.name1 === "Foot") & (file.name2 === "Lateral")) {
+//   rawLines["m1_axis"] = lineObject["m1"]["axis"];
+//   rawLines["cal_tangent"] = lineObject["cal"]["tangent"];
+//   rawLines["tal_axis"] = lineObject["tal"]["axis"];
+//   rawLines["tib_axis"] = lineObject["tib"]["axis"];
+//   rawLines["tib_tangent"] = lineObject["tib"]["tangent"];
+//   rawLines["lowest"] = [lineObject["cal"]["lowest"], lineObject["m5"]["lowest"]];
+// }
+}
+
 function updateGlobalId() {
   lineObject = lineObjects[global_id]["content"];
-  rawLines = lineProcessing(lineObject);
+  lineProcessing(lineObject);
 }
 
 // Define canvas setting of main canvas
@@ -162,19 +178,19 @@ function updateBackground(targetStage, targetLayer) {
   }
 
   // Collect selected segmented images based on checked angles
-  if (document.getElementById("TibioCalcaneal")?.checked) {
+  if (document.getElementById("TibioCalcaneal Angle")?.checked) {
     addSegmentedImage("tib");
     addSegmentedImage("cal");
   }
-  if (document.getElementById("TaloCalcaneal")?.checked) {
+  if (document.getElementById("TaloCalcaneal Angle")?.checked) {
     addSegmentedImage("tal");
     addSegmentedImage("cal");
   }
-  if (document.getElementById("Calcaneal Pitch")?.checked) {
+  if (document.getElementById("Calcaneal Pitch Angle")?.checked) {
     addSegmentedImage("m5");
     addSegmentedImage("cal");
   }
-  if (document.getElementById("Meary")?.checked) {
+  if (document.getElementById("Meary's Angle")?.checked) {
     addSegmentedImage("m1");
     addSegmentedImage("tal");
   }
@@ -344,13 +360,12 @@ function saveAndExportData() {
 
   for (let i = 1; i < table.rows.length; i++) {
       let row = table.rows[i];
-      let rowData = {
-          image_name: row.cells[0].textContent,
-          tibioCalaneal: row.cells[1].getElementsByTagName("span")[0].textContent,
-          taloCalcaneal: row.cells[2].getElementsByTagName("span")[0].textContent,
-          calcanealPitch: row.cells[3].getElementsByTagName("span")[0].textContent,
-          Meary: row.cells[4].getElementsByTagName("span")[0].textContent
-      };
+      let rowData = {image_name: row.cells[0].textContent};
+
+      selectedAngles.forEach((selectedAngle, index) => {
+        let selectedAngle_csvStyle = selectedAngle.replace(/'/g, "").replace(/ /g, "_");
+        rowData[selectedAngle_csvStyle] = row.cells[index+1].getElementsByTagName("span")[0].textContent;
+      });
       data.push(rowData);
   }
 
@@ -387,7 +402,7 @@ function saveAndExportData() {
 function drawLines(stage, layer) {
   layer.find("Group").forEach((group) => group.destroy());
 
-  Object.keys(angleMapping).forEach((angle) => {
+  selectedAngles.forEach((angle) => {
     if (document.getElementById(angle).checked) {
       drawLinesForAngle(angle, stage, layer);
     }
@@ -405,7 +420,7 @@ function drawLinesForAngle(angle, stage, layer) {
   }
 
   if (lineObject && targetLines) {
-    var lines = lineFitting(targetLines, (canvasSize = stage.width()));
+    var lines = lineFitting(targetLines, stage.width());
 
     lines.forEach((line, index) => {
       var konvaLine = new Konva.Line({
@@ -452,49 +467,15 @@ function drawLinesForAngle(angle, stage, layer) {
         konvaLine.points(points);
       }
 
-      // function addDragBehavior(shape) {
-      //   var isDragging = false;
-
-      //   shape.on("mousedown touchstart", function () {
-      //     isDragging = true;
-      //   });
-
-      //   shape.on("mouseup touchend", function () {
-      //     isDragging = false;
-      //     updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
-      //     updateBackground(stage, layer);
-      //   });
-
-      //   shape.on("dragmove", function () {
-      //     updateLine();
-      //     updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
-      //   });
-
-      //   stage.on("mouseout", function () {
-      //     if (isDragging) {
-      //       isDragging = false;
-      //       updateLineObject(
-      //         lines,
-      //         index,
-      //         konvaLine,
-      //         group,
-      //         layer,
-      //         mapped_lines
-      //       );
-      //       updateBackground(stage, layer);
-      //     }
-      //   });
-      // }
-
       function addDragBehaviorLazy(shape) {
         shape.on("dragmove", function () {
           updateLine();
           // layer.batchDraw();
-          updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
+          updateLineObject(lines, index, konvaLine, group, layer, angle);
         });
 
         shape.on("dragend", function () {
-          updateLineObject(lines, index, konvaLine, group, layer, mapped_lines);
+          updateLineObject(lines, index, konvaLine, group, layer, angle);
           updateBackground(stage, layer);
         });
       }
@@ -620,7 +601,8 @@ function displayAngle(angleValue, line1, line2, layer, angle) {
   layer.add(angleText);
 }
 
-function updateLineObject(lines, index, konvaLine, group, layer, mapped_lines) {
+function updateLineObject(lines, index, konvaLine, group, layer, angle) {
+  let mapped_lines = angleMapping[angle];
   var points = konvaLine.points();
   var groupPos = group.position();
 
@@ -643,8 +625,8 @@ function updateLineObject(lines, index, konvaLine, group, layer, mapped_lines) {
   layer.find("Text").forEach((text) => text.destroy());
 
   if (lines.length === 2) {
-    var angle = calculateAngleBetweenLines(lines[0], lines[1]);
-    displayAngle(angle, lines[0], lines[1], layer);
+    var angleValue = calculateAngleBetweenLines(lines[0], lines[1]);
+    displayAngle(angleValue, lines[0], lines[1], layer, angle);
   }
 }
 
@@ -792,14 +774,14 @@ function calculateAngleOnly(id) {
   global_id = id;
   updateGlobalId();
   
-  Object.keys(angleMapping).forEach((angle) => {
-    const mapped_lines = angleMapping[angle];
+  selectedAngles.forEach((selectedAngle) => {
+    const mapped_lines = angleMapping[selectedAngle];
     var targetLines = [rawLines[mapped_lines[0]], rawLines[mapped_lines[1]]];
     if (rawLines && targetLines) {
       var lines = lineFitting(targetLines);
     }
     var angleValue = calculateAngleBetweenLines(lines[0], lines[1]);
-    currentAngles[angle] = parseFloat(angleValue);
+    currentAngles[selectedAngle] = parseFloat(angleValue);
   })
   updateTableWithAngles(id);
 }
