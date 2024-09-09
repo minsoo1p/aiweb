@@ -125,21 +125,23 @@
           <tbody>
             {% for file in files %}
             <tr>
-              <td>
+              <td style="padding: 0.5em 0.5em; vertical-align:middle;">
                 <a
                   href="{{ url_for('delete_file', project_number=project_id, file_id=file.id) }}"
                   class="fa-solid fa-square-minus"
                   style="text-decoration: none;"
                 ></a>
               </td>
-              <td>{{ file.name1 }}</td>
-              <td>{{ file.name2 }}</td>
-              <td>{{ file.image_number }}</td>
-              <td>{{ file.file_time }}</td>
-              <td style="padding: 0.5em 0.5em; vertical-align:middle;">
-                {% for angle in file.selected_angles %}
-                <ul style="font-size: 10pt; margin: 0;">{{ angle }}</ul>
-                {% endfor %}
+              <td style="padding: 0.5em 0.5em; vertical-align:middle;">{{ file.name1 }}</td>
+              <td style="padding: 0.5em 0.5em; vertical-align:middle;">{{ file.name2 }}</td>
+              <td style="padding: 0.5em 0.5em; vertical-align:middle;">{{ file.image_number }}</td>
+              <td style="padding: 0.5em 0.5em; vertical-align:middle;">{{ file.file_time }}</td>
+              <td style="padding: 0em 0.5em; vertical-align:middle;max-width: 40rem;">
+                <div style="white-space: nowrap; overflow-x: auto; ">
+                  {% for angle in file.selected_angles %}
+                  <ul style="font-size: 1.1rem; display: inline; margin: 0; padding-right: 1em; padding-left: 0;">{{ angle }}</ul>
+                  {% endfor %}
+                </div>
               </td>
               <td>
                 <div class="inference-container">
@@ -149,7 +151,7 @@
                   <a
                     href="#"
                     class="button run {% if file.status != 'pending' %}disabled{% endif %}"
-                    style="height: 3rem; font-size: 0.8rem"
+                    style="height: 2.6rem; font-size: 0.8rem"
                     {% if file.status == 'pending' %}onclick="startInference({{ project_id }}, {{ file.id }})"{% endif %}
                     {% if file.status != 'pending' %}disabled{% endif %}
                     ><i class="fa-solid fa-circle-play fa-lg"></i> Run</a
@@ -165,7 +167,7 @@
                   </span>
                 </div>
               </td>
-              <td style="text-align: right">
+              <td style="text-align: right; vertical-align:middle;">
                 <a href="{{ url_for('processing', project_id = project_id, file_id = file.id) }}"
                 id="link-{{ file.id }}"
                 class="fa-solid fa-chevron-right {% if file.status != 'completed' %}disabled-link{% endif %}"
@@ -238,16 +240,16 @@
               
                   <div id="checkboxes" class="checkboxes">
                       <label for="option1">
-                          <input type="checkbox" id="option1" name="angles" value="TibioCalcaneal Angle" checked/>TibioCalcaneal Angle
+                          <input type="checkbox" id="option1" name="angles" value="TibioCalcaneal Angle"/>TibioCalcaneal Angle
                       </label>
                       <label for="option2">
-                          <input type="checkbox" id="option2" name="angles" value="TaloCalcaneal Angle" checked/>TaloCalcaneal Angle
+                          <input type="checkbox" id="option2" name="angles" value="TaloCalcaneal Angle"/>TaloCalcaneal Angle
                       </label>
                       <label for="option3">
-                          <input type="checkbox" id="option3" name="angles" value="Calcaneal Pitch" checked/>Calcaneal Pitch
+                          <input type="checkbox" id="option3" name="angles" value="Calcaneal Pitch"/>Calcaneal Pitch
                       </label>
                       <label for="option4">
-                          <input type="checkbox" id="option4" name="angles" value="Meary's Angle" checked/>Meary's Angle
+                          <input type="checkbox" id="option4" name="angles" value="Meary's Angle"/>Meary's Angle
                       </label>
                   </div>
                 </div>
@@ -258,21 +260,20 @@
             </div>
 
             <div class="row" style="padding-top: 0.7rem; align-items: flex-end;">
-              <div class="col-3 col-8-small" style="min-width: 16rem;">
+              <div class="col-6 col-8-small" style="min-width: 16rem;">
                 <div id="dropzone" class="dropzone">
-                  <div><i class="fa-solid fa-upload" style="color: #4ea3d8;"></i></div>
-                  <div style="padding-top: 0.5rem;">Drag & Drop Files Here<br>or</div>
-                  <div>
+                  <div style="padding-top: 0.5rem;">Drag & Drop Files here &nbsp;&nbsp;&nbsp;&nbsp; or &nbsp;&nbsp;&nbsp;&nbsp;
                     <input type="file" name="files[]" id="file-input" accept="image/*" multiple style="display: none;" />
                     <button type="button" id="file-upload-btn" class="button primary">Browse Files</button>
                   </div>
-
                 </div>
               </div>
 
-              <div class="col-6 col-8-small" style="min-width: 32rem">
+              <div class="col-3 col-8-small" style="min-width: 16rem">
                 <div class="dropzone">
-                  <div id="file-list" class="file-list"></div>
+                  <div id="file-list" class="file-list"> 
+                    <span class="placeholder">Uploaded Images</span>
+                  </div>
                 </div>
               </div>
 
