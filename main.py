@@ -8,6 +8,7 @@ import base64
 from io import BytesIO
 import json
 import csv
+import ast
 
 import re
 import os
@@ -80,6 +81,7 @@ class File(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name1 = db.Column(db.String(100),nullable=False)
     name2 = db.Column(db.String(100),nullable=False)
+    selected_angles = db.Column(db.Text,nullable=False)
     image_data = db.Column(db.String(100), nullable=False)
     image_number = db.Column(db.Integer)
     file_time = db.Column(db.String(100))
@@ -250,6 +252,7 @@ def pad_image_to_square(input_image, target_size=512):
 def file(project_number):
     projects = Project.query.filter_by(user_id=current_user.id).all()
     files = File.query.filter_by(project_id=project_number).all()
+
     if request.method == "POST":
         now = datetime.now()
         current_date = now.strftime("%Y-%m-%d")
@@ -257,6 +260,10 @@ def file(project_number):
         Name2 = request.form.get('view')
         images = request.files.getlist('files[]')
         image_number = len(images)
+        
+        checkbox_angles = request.form.getlist('angles')
+        Selected_angles = json.dumps(checkbox_angles)
+        
         unique_folder_name = str(uuid.uuid4())
         folder_path = os.path.join(app.config['UPLOAD_FOLDER'], unique_folder_name)
         os.makedirs(os.path.join(folder_path, 'Processed'), exist_ok=True)
@@ -264,13 +271,27 @@ def file(project_number):
             image_path = os.path.join(folder_path, image.filename)
             image.save(image_path)
 
-        new_file = File(name1=Name1, name2=Name2, image_data=unique_folder_name, image_number=len(images) ,file_time=current_date, project_id=project_number)
+        new_file = File(name1=Name1, name2=Name2, selected_angles=Selected_angles, image_data=unique_folder_name, image_number=len(images) ,file_time=current_date, project_id=project_number)
         db.session.add(new_file)
         db.session.commit()
         files = File.query.filter_by(project_id=project_number).all()
+        
+        for file in files:
+            file.selected_angles = ast.literal_eval(file.selected_angles)
 
         return redirect(url_for('file', project_number=project_number))
+    
+    for file in files:
+        file.selected_angles = ast.literal_eval(file.selected_angles)
     return render_template('file.html', projects=projects, files=files, project_id=project_number)
+
+# selected_angles를 jinja template 내에서 list로 변환하기 위해 사용
+@app.template_filter('parse_json')
+def parse_json(value):
+    try:
+        return json.loads(value)
+    except:
+        return []
 
 @app.route('/delete_file/<int:project_number>/<int:file_id>', methods=['GET'])
 @login_required
@@ -470,6 +491,8 @@ def processing(project_id, file_id):
         with open(csv_file_path, 'r') as csvfile:
             reader = csv.DictReader(csvfile)
             angle_data = list(reader)
+            
+    file.selected_angles = ast.literal_eval(file.selected_angles)
 
     return render_template('processing.html', 
                            projects=projects, 
@@ -484,15 +507,19 @@ def processing(project_id, file_id):
 @login_required
 def save_and_download(file_id):
     file = File.query.get(file_id)
+    selectedAngles = ast.literal_eval(file.selected_angles)
+    
     if not file:
         return jsonify({'error': 'File not found'}), 404
 
     data = request.json
     csv_file_path = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data, 'Processed', 'angles.csv')
+    print(data)
 
     # Update CSV file
     with open(csv_file_path, 'w', newline='') as csvfile:
-        fieldnames = ['image_name', 'tibioCalaneal', 'taloCalcaneal', 'calcanealPitch', 'Meary']
+        fieldnames = ['image_name'] + selectedAngles
+        fieldnames = [item.replace("'", "").replace(" ", "_") for item in fieldnames]
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
         for row in data:
@@ -522,20 +549,37 @@ def batch_inference(data):
     project_id = data['project_id']
     file_id = data['file_id']
     file = File.query.get(file_id)
+    selectedAngles = ast.literal_eval(file.selected_angles)
+    
+    angle_to_seglist = {
+        'TibioCalcaneal Angle': ['tib', 'cal'],
+        'TaloCalcaneal Angle': ['tal', 'cal'],
+        'Calcaneal Pitch': ['cal', 'm5'],
+        "Meary's Angle": ['tal', 'm1']
+    }
+    
+    seglist = []
+    for selectedAngle in selectedAngles:
+        seglist += angle_to_seglist[selectedAngle]
+    segset = set(seglist)
     
     if file and file.project_id == project_id:
         try:
             image_folder = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
-            seg = foot_lateral_segmentation('m1', 'm5', 'cal', 'tal', 'tib')
+            seg = foot_lateral_segmentation(*segset)
             #total processing count
             image_number = len([f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'))])
-            total_process = image_number * 7
+            image_number
             count = 0
             file.status = 'processing'
             db.session.commit()
             
+            # test용 error code
+            # raise ValueError()
+            
             #CSV creation
-            fieldnames = ['image_name', 'tibioCalaneal', 'taloCalcaneal', 'calcanealPitch', 'Meary']
+            fieldnames = ['image_name'] + selectedAngles
+            fieldnames = [item.replace("'", "").replace(" ", "_") for item in fieldnames]
             csv_file_path = os.path.join(image_folder, 'Processed', f'angles.csv')
             with open(csv_file_path, 'w', newline='') as csvfile:
                 writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
@@ -549,8 +593,6 @@ def batch_inference(data):
                     original, masks = seg.segmentation(image)
 
                     seg.to_JPG(original, os.path.join(image_folder, 'Processed', f'{index+1}_{root}_original{ext}'))
-                    count += 1
-                    socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/total_process * 100, 1)})
                     
                     clean_mask = Cleaning_contour()
                     cleaned_masks = {}
@@ -562,25 +604,17 @@ def batch_inference(data):
 
                         output_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{input}{ext}')
                         seg.to_JPG(cleaned_masks[input],output_path)
-                        count += 1
-                        socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/total_process * 100, 1)})
 
                     post_data = Post_processing(cleaned_masks)
                     data = post_data.postProcess()
                     count += 1
-                    socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/total_process * 100, 1)})
+                    socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/image_number * 100, 1)})
 
                     file_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_postline.json')
                     with open(file_path, 'w') as json_file:
                         json.dump(data, json_file, cls=NumpyEncoder, indent=4)
                         
-                    writer.writerow({
-                        'image_name': root,
-                        'tibioCalaneal': 'n/a',
-                        'taloCalcaneal': 'n/a',
-                        'calcanealPitch': 'n/a',
-                        'Meary': 'n/a'
-                    })
+                    writer.writerow({key:root if key=='image_name' else 'n/a' for key in fieldnames})
             
             file.status = 'completed'
             db.session.commit()
