@@ -186,7 +186,7 @@ function updateBackground(targetStage, targetLayer) {
     addSegmentedImage("tal");
     addSegmentedImage("cal");
   }
-  if (document.getElementById("Calcaneal Pitch Angle")?.checked) {
+  if (document.getElementById("Calcaneal Pitch")?.checked) {
     addSegmentedImage("m5");
     addSegmentedImage("cal");
   }
@@ -347,6 +347,10 @@ function confirmSave() {
   updateTableWithAngles(global_id);
 
   if (global_id < image_number) {
+    document.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+      checkbox.checked = true;
+    });
+
     global_id++;
     updateAllCanvases();
   } else {
@@ -739,6 +743,10 @@ function calculateAngleBetweenLines(line1, line2) {
 
 function changeGlobalId(id) {
   if (id > 0 && id <= image_number) {
+    document.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+      checkbox.checked = true;
+    });
+
     global_id = id;
     updateAllCanvases();
   } else {
