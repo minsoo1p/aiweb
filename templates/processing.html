@@ -284,7 +284,7 @@
                         <a
                           href="#"
                           onclick="changeGlobalId({{ loop.index0 + 1 }})"
-                          style="max-width: 12rem; display: block; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"">{{ row['image_name'] }}</a>
+                          style="max-width: 12rem; text-overflow: ellipsis; overflow: hidden; white-space: nowrap;"">{{ row['image_name'] }}</a>
                       </td>
                       {% for angle in file.selected_angles %}
                       <td style="width: 6rem; text-align: center;" data-angle="{{ angle }}">

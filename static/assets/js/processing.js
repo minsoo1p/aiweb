@@ -23,55 +23,57 @@ var rawLinesExpanded = {};
 
 const angleMapping = {
   // Foot Lateral
-  'TibioCalcaneal Angle': ['tib_axis', 'cal_tangent'],
-  'TaloCalcaneal Angle': ['tal_axis', 'cal_tangent'],
-  'Calcaneal Pitch': ['cal_tangent', 'lowest'],
-  "Meary's Angle": ['tal_axis', 'm1_axis'],
-
-}
+  "TibioCalcaneal Angle": ["tib_axis", "cal_tangent"],
+  "TaloCalcaneal Angle": ["tal_axis", "cal_tangent"],
+  "Calcaneal Pitch": ["cal_tangent", "lowest"],
+  "Meary's Angle": ["tal_axis", "m1_axis"],
+};
 
 function lineObject_to_rawLines(line_tags, rawLines, lineObject) {
-  line_tags.forEach((tag) =>{
-      switch (tag) {
-          case 'm1_axis':
-              rawLines[tag] = lineObject["m1"]["axis"];
-              break;
-          case 'cal_tangent':
-              rawLines[tag] = lineObject["cal"]["tangent"];
-              break;
-          case 'tal_axis':
-              rawLines[tag] = lineObject["tal"]["axis"];
-              break;
-          case 'tib_axis':
-              rawLines[tag] = lineObject["tib"]["axis"];
-              break;
-          case 'tib_tangent':
-              rawLines[tag] = lineObject["tib"]["tangent"];
-              break;
-          case 'lowest':
-              rawLines[tag] = [lineObject["cal"]["lowest"], lineObject["m5"]["lowest"]];
-              break;
-          default:
-              console.error('non available line_tag of selected angle');
-      }
-  })
+  line_tags.forEach((tag) => {
+    switch (tag) {
+      case "m1_axis":
+        rawLines[tag] = lineObject["m1"]["axis"];
+        break;
+      case "cal_tangent":
+        rawLines[tag] = lineObject["cal"]["tangent"];
+        break;
+      case "tal_axis":
+        rawLines[tag] = lineObject["tal"]["axis"];
+        break;
+      case "tib_axis":
+        rawLines[tag] = lineObject["tib"]["axis"];
+        break;
+      case "tib_tangent":
+        rawLines[tag] = lineObject["tib"]["tangent"];
+        break;
+      case "lowest":
+        rawLines[tag] = [
+          lineObject["cal"]["lowest"],
+          lineObject["m5"]["lowest"],
+        ];
+        break;
+      default:
+        console.error("non available line_tag of selected angle");
+    }
+  });
 }
 
 function lineProcessing(lineObject) {
   let line_tags = new Set();
   selectedAngles.forEach(function (selectedAngle) {
-    angleMapping[selectedAngle].forEach(tag => line_tags.add(tag));
-  })
+    angleMapping[selectedAngle].forEach((tag) => line_tags.add(tag));
+  });
   lineObject_to_rawLines(line_tags, rawLines, lineObject);
 
-// if ((file.name1 === "Foot") & (file.name2 === "Lateral")) {
-//   rawLines["m1_axis"] = lineObject["m1"]["axis"];
-//   rawLines["cal_tangent"] = lineObject["cal"]["tangent"];
-//   rawLines["tal_axis"] = lineObject["tal"]["axis"];
-//   rawLines["tib_axis"] = lineObject["tib"]["axis"];
-//   rawLines["tib_tangent"] = lineObject["tib"]["tangent"];
-//   rawLines["lowest"] = [lineObject["cal"]["lowest"], lineObject["m5"]["lowest"]];
-// }
+  // if ((file.name1 === "Foot") & (file.name2 === "Lateral")) {
+  //   rawLines["m1_axis"] = lineObject["m1"]["axis"];
+  //   rawLines["cal_tangent"] = lineObject["cal"]["tangent"];
+  //   rawLines["tal_axis"] = lineObject["tal"]["axis"];
+  //   rawLines["tib_axis"] = lineObject["tib"]["axis"];
+  //   rawLines["tib_tangent"] = lineObject["tib"]["tangent"];
+  //   rawLines["lowest"] = [lineObject["cal"]["lowest"], lineObject["m5"]["lowest"]];
+  // }
 }
 
 function updateGlobalId() {
@@ -101,7 +103,7 @@ function syncLines(currentLayer) {
   if (currentLayer === layerLarge) {
     for (let key in rawLinesExpanded) {
       if (rawLinesExpanded[key] instanceof Array) {
-        rawLines[key] = rawLinesExpanded[key].map(line => {
+        rawLines[key] = rawLinesExpanded[key].map((line) => {
           return [line[0] * line_scaler, line[1] * line_scaler];
         });
       }
@@ -109,13 +111,12 @@ function syncLines(currentLayer) {
   } else {
     for (let key in rawLines) {
       if (rawLines[key] instanceof Array) {
-        rawLinesExpanded[key] = rawLines[key].map(line => {
+        rawLinesExpanded[key] = rawLines[key].map((line) => {
           return [line[0] * line_scaler, line[1] * line_scaler];
         });
       }
     }
   }
-
 }
 
 document
@@ -186,7 +187,7 @@ function updateBackground(targetStage, targetLayer) {
     addSegmentedImage("tal");
     addSegmentedImage("cal");
   }
-  if (document.getElementById("Calcaneal Pitch Angle")?.checked) {
+  if (document.getElementById("Calcaneal Pitch")?.checked) {
     addSegmentedImage("m5");
     addSegmentedImage("cal");
   }
@@ -359,43 +360,46 @@ function saveAndExportData() {
   let data = [];
 
   for (let i = 1; i < table.rows.length; i++) {
-      let row = table.rows[i];
-      let rowData = {image_name: row.cells[0].textContent};
+    let row = table.rows[i];
+    let rowData = { image_name: row.cells[0].textContent };
 
-      selectedAngles.forEach((selectedAngle, index) => {
-        let selectedAngle_csvStyle = selectedAngle.replace(/'/g, "").replace(/ /g, "_");
-        rowData[selectedAngle_csvStyle] = row.cells[index+1].getElementsByTagName("span")[0].textContent;
-      });
-      data.push(rowData);
+    selectedAngles.forEach((selectedAngle, index) => {
+      let selectedAngle_csvStyle = selectedAngle
+        .replace(/'/g, "")
+        .replace(/ /g, "_");
+      rowData[selectedAngle_csvStyle] =
+        row.cells[index + 1].getElementsByTagName("span")[0].textContent;
+    });
+    data.push(rowData);
   }
 
   fetch(`/save_and_download/${file.id}`, {
-      method: "POST",
-      headers: {
-          "Content-Type": "application/json",
-      },
-      body: JSON.stringify(data),
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(data),
   })
-  .then(response => {
+    .then((response) => {
       if (response.ok) {
-          return response.blob();
+        return response.blob();
       }
-      throw new Error('Network response was not ok.');
-  })
-  .then(blob => {
+      throw new Error("Network response was not ok.");
+    })
+    .then((blob) => {
       const url = window.URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.style.display = 'none';
+      const a = document.createElement("a");
+      a.style.display = "none";
       a.href = url;
-      a.download = 'angles.csv';
+      a.download = "angles.csv";
       document.body.appendChild(a);
       a.click();
       window.URL.revokeObjectURL(url);
-  })
-  .catch((error) => {
+    })
+    .catch((error) => {
       console.error("Error:", error);
       alert("Error saving and exporting data.");
-  });
+    });
 }
 
 // Draw lines
@@ -414,7 +418,10 @@ function drawLines(stage, layer) {
 function drawLinesForAngle(angle, stage, layer) {
   const mapped_lines = angleMapping[angle];
   if (layer === layerLarge) {
-    var targetLines = [rawLinesExpanded[mapped_lines[0]], rawLinesExpanded[mapped_lines[1]]];
+    var targetLines = [
+      rawLinesExpanded[mapped_lines[0]],
+      rawLinesExpanded[mapped_lines[1]],
+    ];
   } else {
     var targetLines = [rawLines[mapped_lines[0]], rawLines[mapped_lines[1]]];
   }
@@ -773,7 +780,7 @@ function updateAllCanvases() {
 function calculateAngleOnly(id) {
   global_id = id;
   updateGlobalId();
-  
+
   selectedAngles.forEach((selectedAngle) => {
     const mapped_lines = angleMapping[selectedAngle];
     var targetLines = [rawLines[mapped_lines[0]], rawLines[mapped_lines[1]]];
@@ -782,7 +789,7 @@ function calculateAngleOnly(id) {
     }
     var angleValue = calculateAngleBetweenLines(lines[0], lines[1]);
     currentAngles[selectedAngle] = parseFloat(angleValue);
-  })
+  });
   updateTableWithAngles(id);
 }
 
@@ -791,7 +798,7 @@ window.onload = function () {
     checkbox.checked = true;
   });
 
-  for (let id=1; id <= image_number; id++) {
+  for (let id = 1; id <= image_number; id++) {
     calculateAngleOnly(id);
   }
   global_id = 1;
