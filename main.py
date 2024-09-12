@@ -43,6 +43,7 @@ from sqlalchemy.orm import relationship
 from foot_lateral_model import foot_lateral_segmentation
 from image_processing import Process
 from post_processing import Cleaning_contour, Post_processing
+from kind_detection import Preprocessing
 
 load_dotenv() 
 
@@ -129,8 +130,6 @@ def info():
 @app.route("/article")
 def article():
     return render_template('article.html')
-
-
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -227,24 +226,6 @@ def cv2_imread(file):
     return img
 
 
-def pad_image_to_square(input_image, target_size=512):
-    # 원본 이미지 크기 가져오기
-    width, height = input_image.size
-
-    # 이미지가 정사각형이 아니면 패딩 추가
-    if width != height:
-        # 패딩 계산
-        delta_w = target_size - width
-        delta_h = target_size - height
-        padding = (delta_w // 2, delta_h // 2, delta_w - (delta_w // 2), delta_h - (delta_h // 2))
-
-        # 패딩 추가하여 이미지 정사각형 만들기
-        input_image = ImageOps.expand(input_image, padding, fill=(0, 0, 0))
-
-    # 512x512로 크기 조정
-    output_image = input_image.resize((target_size, target_size), Image.ANTIALIAS)
-
-    return output_image
 
 # 사진을 올리는 순간 processed 파일 생성 
 @app.route("/file/<int:project_number>", methods=["GET", "POST"])
@@ -307,111 +288,6 @@ def delete_file(project_number, file_id):
         db.session.commit()
     return redirect(url_for('file', project_number=project_number))
 
-# @app.route("/file_location/<int:project_id>/<int:location>", methods=["GET", "POST"])
-# @login_required
-# def file_location(project_id, location):
-#     files = File.query.filter_by(project_id=project_id).all()
-#     location = location
-#     if request.method == "POST" :
-#         now = datetime.now()
-#         current_date = now.strftime("%Y-%m-%d")
-#         Name1 = location
-#         Name2 = request.form.get('view')
-
-#         files = File.query.filter_by(project_id=project_id).all()
-#         return redirect('file_location')
-#     return render_template('file.html', files=files, location=location)
-
-'''
-        Name2 = 
-        Img = 
-        new_file = File(name1=Name1, name2=Name2, image_data=Img, file_time=current_date, project_id=project_id)
-        db.session.add(new_file)
-        db.session.commit()
-'''
-
-'''
-    name1 = db.Column(db.String(100),nullable=False)
-    name2 = db.Column(db.String(100),nullable=False)
-    image_data = db.Column(db.LargeBinary, nullable=False)
-    file_time = db.Column(db.String(100))
-    project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
-
-'''
-
-# # Example usage
-# image_folder = '/content/drive/MyDrive/data/normal'
-# images = load_images(image_folder)
-# if images is not None:
-#     print(f"Loaded {len(images)} images with shape {images.shape}")
-
-
-
-
-# def load_and_process_images(image_folder, target_size=(512, 512)):
-#     processed_images = []
-#     image_filenames = sorted(os.listdir(image_folder))
-
-#     for image_filename in image_filenames:
-#         if image_filename.lower().endswith(('.jpg', '.jpeg', '.png', '.gif')):
-#             image_path = os.path.join(image_folder, image_filename)
-#             image = cv2.imread(image_path)
-#             if image is None:
-#                 print(f"Error reading image: {image_filename}")
-#                 continue
-
-#             processed_image = resize_and_pad(image, target_size)
-#             processed_images.append(processed_image)
-#     return processed_images
-
-# def image_to_base64(image):
-#     _, buffer = cv2.imencode('.png', image)
-#     img_str = base64.b64encode(buffer).decode('utf-8')
-#     return f"data:image/png;base64,{img_str}"
-
-def model_inference(original_image_path, segmented_output_path):
-    """
-    # AI 모델 돌아가고 segmentation 결과물을 저장하는 함수
-    # 
-    # image = load_image(original_image_path)
-    # segmented_image = run_segmentation_model(image)
-    # save_image(segmented_image, segmented_output_path)
-    """
-    #dummy function
-    # os.makedirs(segmented_output_path, exist_ok=True)
-    # file_base = os.path.basename(original_image_path)
-    # file_name = os.path.splitext(file_base)[0]
-    # dummy_path = f'tmp/{file_name}_segmented'
-
-    # if os.path.exists(dummy_path):
-    #     for item in os.listdir(dummy_path):
-    #         s = os.path.join(dummy_path, item)
-    #         d = os.path.join(segmented_output_path, item)
-            
-    #         shutil.copy2(s, d)
-            
-    #     print('dummy segmentation folder was made.')
-    
-    pass
-
-def postprocessing_inference(original_image_path, segmented_image_path, line_objects_output_path):
-    """
-    # segmented output을 이용해 line object를 저장하는 함수
-    # 
-    # original_image = load_image(original_image_path)
-    # segmented_image = load_image(segmented_image_path)
-    # line_objects = generate_line_objects(original_image, segmented_image)
-    # save_json(line_objects, line_objects_output_path)
-    """
-    #dummy function
-    # os.makedirs(line_objects_output_path, exist_ok=True)
-    # dummy_path = f'tmp/line_objects.json'
-    # if os.path.exists(dummy_path):
-    #     shutil.copy2(dummy_path, os.path.join(line_objects_output_path, 'line_objects.json'))
-        
-    #     print('dummy line_objects folder was made.')
-    
-    pass
 
 @app.route("/processing/<int:project_id>/<int:file_id>", methods=['GET','POST'])
 @login_required
@@ -538,12 +414,32 @@ class NumpyEncoder(json.JSONEncoder):
             return obj.tolist()
         return super(NumpyEncoder, self).default(obj)
 
+
+def size_regurizer(image):
+    # image = cv2.imread(image_path)
+    height, width = image.shape[:2]
+    
+    if height > width:
+        padding = (height - width) // 2
+        square_image = cv2.copyMakeBorder(image, 0, 0, padding, padding, cv2.BORDER_CONSTANT, value=[0, 0, 0])
+    elif width > height:
+        padding = (width - height) // 2
+        square_image = cv2.copyMakeBorder(image, padding, padding, 0, 0, cv2.BORDER_CONSTANT, value=[0, 0, 0])
+    else:
+        square_image = image  # cropped_image를 사용하지 않았으므로 image로 대체
+
+    resized_image = cv2.resize(square_image, (512, 512))
+    return resized_image
+
 @socketio.on('connect')
 def test_connect():
-    emit('my response', {'data': 'Connected'})
+    if not current_user.is_authenticated:
+        return False  
+    else:
+        emit('my response', {'data': 'Connected'})
+        return True 
 
-@tf.function
-@login_required    
+
 @socketio.on('start_inference')
 def batch_inference(data):
     project_id = data['project_id']
@@ -566,7 +462,8 @@ def batch_inference(data):
     if file and file.project_id == project_id:
         try:
             image_folder = os.path.join(app.config['UPLOAD_FOLDER'], file.image_data)
-            seg = foot_lateral_segmentation(*segset)
+            seglist = list(segset)
+            seg = foot_lateral_segmentation('static/models/kind_detection_yolov8_model.pt',*seglist)
             #total processing count
             image_number = len([f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'))])
             image_number
@@ -574,8 +471,6 @@ def batch_inference(data):
             file.status = 'processing'
             db.session.commit()
             
-            # test용 error code
-            # raise ValueError()
             
             #CSV creation
             fieldnames = ['image_name'] + selectedAngles
@@ -589,33 +484,96 @@ def batch_inference(data):
                     full_image_path = os.path.join(image_folder, image_file)
                     image = Image.open(full_image_path)
                     root, ext = os.path.splitext(image_file)
-                    image = seg.preprocess(full_image_path)
-                    original, masks = seg.segmentation(image)
-
-                    seg.to_JPG(original, os.path.join(image_folder, 'Processed', f'{index+1}_{root}_original{ext}'))
                     
-                    clean_mask = Cleaning_contour()
-                    cleaned_masks = {}
-                    for input in masks :
-                        clean_contour = clean_mask.clean_contour(masks[input])
-                        arc_contour = clean_mask.arc_contour(clean_contour)
-                        decay_contour = clean_mask.decay_contour(arc_contour) 
-                        cleaned_masks[input] = decay_contour
+                    
+                    # image = seg.preprocess(full_image_path)
+###                 # resized_image = size_regurizer(full_image_path)
+                    original_image = cv2.imread(full_image_path)
+                    results = seg.detect_and_crop(original_image)
+                    # process = Preprocessing(resized_image)
+                    # results = process.cropping()
 
-                        output_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{input}{ext}')
-                        seg.to_JPG(cleaned_masks[input],output_path)
+                    num_boxes = len(results)
+                    print(f'number is {num_boxes}')
 
-                    post_data = Post_processing(cleaned_masks)
-                    data = post_data.postProcess()
-                    count += 1
-                    socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/image_number * 100, 1)})
+                    if num_boxes == 1 :
+                        image = results[0]['image']
+                        box = results[0]['box']
+                        type = results[0]['type']
 
-                    file_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_postline.json')
-                    with open(file_path, 'w') as json_file:
-                        json.dump(data, json_file, cls=NumpyEncoder, indent=4)
+                        _, masks = seg.segmentation(image)
+
+                        resized_original_image = size_regurizer(original_image)
+                        seg.to_JPG(resized_original_image, os.path.join(image_folder, 'Processed', f'{index+1}_{root}_original{ext}'))
                         
-                    writer.writerow({key:root if key=='image_name' else 'n/a' for key in fieldnames})
-            
+                        masks = {key: seg.returned(original_image, image, box) for key, image in masks.items()}
+                        masks = {key: size_regurizer(image) for key, image in masks.items()}
+
+                        clean_mask = Cleaning_contour()
+                        cleaned_masks = {}
+                        for input in masks :
+                            clean_contour = clean_mask.clean_contour(masks[input])
+                            arc_contour = clean_mask.arc_contour(clean_contour)
+                            decay_contour = clean_mask.decay_contour(arc_contour) 
+                            cleaned_masks[input] = decay_contour
+
+                            output_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{input}{ext}')
+                            seg.to_JPG(cleaned_masks[input],output_path)
+                        
+
+                        post_data = Post_processing(cleaned_masks)
+                        data = post_data.postProcess()
+                        count += 1
+                        socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/image_number * 100, 1)})
+
+                        file_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_postline.json')
+                        with open(file_path, 'w') as json_file:
+                            json.dump(data, json_file, cls=NumpyEncoder, indent=4)
+                            
+                        writer.writerow({key:root if key=='image_name' else 'n/a' for key in fieldnames})
+
+                    elif num_boxes >= 2:
+                        number = 1
+                        resized_original_image = size_regurizer(original_image)
+                        for result in results : 
+                            image = result['image']
+                            box = result['box']
+                            result_type = result['type']
+
+                            _, masks = seg.segmentation(image)
+
+                            seg.to_JPG(resized_original_image, os.path.join(image_folder, 'Processed', f'{index+1}_{root}_original_{number}{ext}'))
+                            
+                            masks = {key: seg.returned(original_image, image, box) for key, image in masks.items()}
+                            masks = {key: size_regurizer(image) for key, image in masks.items()}
+
+                            clean_mask = Cleaning_contour()
+                            cleaned_masks = {}
+                            for input in masks :
+                                clean_contour = clean_mask.clean_contour(masks[input])
+                                arc_contour = clean_mask.arc_contour(clean_contour)
+                                decay_contour = clean_mask.decay_contour(arc_contour) 
+                                cleaned_masks[input] = decay_contour
+
+                                output_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{input}_{number}{ext}')
+                                seg.to_JPG(cleaned_masks[input],output_path)
+                            
+
+                            post_data = Post_processing(cleaned_masks)
+                            data = post_data.postProcess()
+
+
+                            file_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_postline_{number}.json')
+                            with open(file_path, 'w') as json_file:
+                                json.dump(data, json_file, cls=NumpyEncoder, indent=4)
+                                
+                            writer.writerow({key:root if key==f'image_name_{number}' else 'n/a' for key in fieldnames})
+                            number += 1
+                        count += 1
+                        socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/image_number * 100, 1)})
+
+
+
             file.status = 'completed'
             db.session.commit()
             socketio.emit('inference_complete', {'file_id': file_id, 'status': 'completed'})
@@ -633,4 +591,4 @@ def batch_inference(data):
     return redirect(url_for('file', project_number=project_id))
 
 if __name__ == '__main__':
-    app.run(debug=True)
+    socketio.run(app, debug=False)

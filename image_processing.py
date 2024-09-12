@@ -24,15 +24,10 @@ class Process :
         else:
             gray_image = image
 
-        contours_image, _ = cv2.findContours(gray_image, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        h, w = gray_image.shape[:2]
 
-        if len(contours_image) == 0:
-            resized_image = cv2.resize(image, target_size)
-            gray_resized_image = cv2.cvtColor(resized_image, cv2.COLOR_BGR2GRAY) if len(resized_image.shape) == 3 else resized_image
-            return np.expand_dims(gray_resized_image, axis=-1)
-
-        largest_contour = max(contours_image, key=cv2.contourArea)
-        x, y, w, h = cv2.boundingRect(largest_contour)
+        # x, y는 이미지의 좌상단 모서리이므로 0으로 설정합니다
+        x, y = 0, 0
 
         if w < 20 or h < 20 or w / h > 10 or h / w > 10:
             print("Warning: Abnormal bounding rectangle detected.")
