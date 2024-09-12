@@ -542,7 +542,7 @@ def batch_inference(data):
 
                             _, masks = seg.segmentation(image)
 
-                            seg.to_JPG(resized_original_image, os.path.join(image_folder, 'Processed', f'{index+1}_{root}_original_{number}{ext}'))
+                            seg.to_JPG(resized_original_image, os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{number}_original{ext}'))
                             
                             masks = {key: seg.returned(original_image, image, box) for key, image in masks.items()}
                             masks = {key: size_regurizer(image) for key, image in masks.items()}
@@ -555,7 +555,7 @@ def batch_inference(data):
                                 decay_contour = clean_mask.decay_contour(arc_contour) 
                                 cleaned_masks[input] = decay_contour
 
-                                output_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{input}_{number}{ext}')
+                                output_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{number}_{input}{ext}')
                                 seg.to_JPG(cleaned_masks[input],output_path)
                             
 
@@ -563,11 +563,11 @@ def batch_inference(data):
                             data = post_data.postProcess()
 
 
-                            file_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_postline_{number}.json')
+                            file_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{number}_postline.json')
                             with open(file_path, 'w') as json_file:
                                 json.dump(data, json_file, cls=NumpyEncoder, indent=4)
                                 
-                            writer.writerow({key:root if key==f'image_name_{number}' else 'n/a' for key in fieldnames})
+                            writer.writerow({key:root if key==f'{number}_image_name' else 'n/a' for key in fieldnames})
                             number += 1
                         count += 1
                         socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/image_number * 100, 1)})
