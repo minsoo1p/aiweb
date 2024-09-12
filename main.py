@@ -303,10 +303,19 @@ def processing(project_id, file_id):
     #                     if img.lower().endswith(('.png', '.jpg', '.jpeg'))]
 
     preprocessed_images = {}
+    number = 1
     for img in sorted(os.listdir(processed_folder)):
         if img.lower().endswith(('original.png', 'original.jpg', 'original.jpeg')):
-            index = int(img.split('_')[0])
-            preprocessed_images[index] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
+            index = img.split('_')[0]
+            if '-' in index : 
+                primary_index = index.split('-')[0]
+                secondary_index = index.split('-')[1]
+                for numb in range(int(secondary_index)) :
+                    preprocessed_images[number] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
+                    number += 1
+            else : 
+                preprocessed_images[number] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
+                number += 1 
 
     # preprocessed_images = [url_for('static', filename=f'image/{file.image_data}/Processed/{img}') 
     #                     for img in sorted(os.listdir(os.path.join(folder_path, 'Processed')), key=lambda file: int(file.split('_')[0])) 
@@ -319,7 +328,7 @@ def processing(project_id, file_id):
     # visualized_original_images = [image_to_base64(img) for img in processed_original_images]
     # visualized_segmented_images = [image_to_base64(img) for img in processed_segmented_images]
 
-    segmented_images = {}
+    
     # for img_folder in sorted(os.listdir(folder_path)):
     #     img_path = os.path.join(folder_path, img_folder)
     #     if os.path.isdir(img_path):
@@ -328,37 +337,83 @@ def processing(project_id, file_id):
     #             for img in sorted(os.listdir(img_path))
     #             if img.lower().endswith(('.png', '.jpg', '.jpeg'))
     #         ]
-    
+    segmented_images = {}
+    number = 0
+    guide = ''
     for img in sorted(os.listdir(processed_folder)):
         if img.lower().endswith(('.png', '.jpg', '.jpeg')) and not img.lower().endswith(('_original.png', '_original.jpg', '_original.jpeg')):
             root, ext = os.path.splitext(img)
             parts = root.split('_')
             if len(parts) > 2:
-                index = int(parts[0])
-                original_name = '_'.join(parts[1:-1])
-                seg_type = parts[-1]
-                if index not in segmented_images:
-                    segmented_images[index] = {}
-                    segmented_images[index]['name'] = original_name
-                segmented_images[index][seg_type] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
+                if guide == parts[0] :
+                    if '-' in parts[0]:
+                        original_name = '_'.join(parts[1:-1])
+                        seg_type = parts[-1]
+                        if number not in segmented_images:
+                            segmented_images[number] = {}
+                            segmented_images[number]['name'] = original_name
+                        segmented_images[number][seg_type] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
+                    else :
+                        original_name = '_'.join(parts[1:-1])
+                        seg_type = parts[-1]
+                        if number not in segmented_images:
+                            segmented_images[number] = {}
+                            segmented_images[number]['name'] = original_name
+                        segmented_images[number][seg_type] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
+                elif guide != parts[0] : 
+                    number += 1
+                    guide = parts[0]
+                    if '-' in parts[0]:
+                        original_name = '_'.join(parts[1:-1])
+                        seg_type = parts[-1]
+                        if number not in segmented_images:
+                            segmented_images[number] = {}
+                            segmented_images[number]['name'] = original_name
+                        segmented_images[number][seg_type] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
+                            
+                    else :
+                        if len(parts) > 2:
+                            original_name = '_'.join(parts[1:-1])
+                            seg_type = parts[-1]
+                            if number not in segmented_images:
+                                segmented_images[number] = {}
+                                segmented_images[number]['name'] = original_name
+                            segmented_images[number][seg_type] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
 
-            
+    number = 1
     line_objects = {}
     for lines in sorted(os.listdir(processed_folder)):
         if lines.lower().endswith('.json'):
             root, ext = os.path.splitext(lines)
             parts = root.split('_')
-            index = int(parts[0])
-            original_name = '_'.join(parts[1:-1])
-            with open(os.path.join(processed_folder, lines), 'r') as f:
-                try:
-                    line_objects[index] = {
-                        'name': original_name,
-                        'content': json.load(f)
-                    }
-                except json.JSONDecodeError:
-                    print(f"Error decoding JSON file: {lines}")
-                    line_objects[root] = {}
+            if '-' in parts[0] :
+                primary_index = parts[0].split('-')[0]
+                secondary_index = parts[0].split('-')[1]
+                for numb in range(int(secondary_index)) : 
+                    original_name = '_'.join(parts[1:-1])
+                    with open(os.path.join(processed_folder, lines), 'r') as f:
+                        try:
+                            line_objects[number] = {
+                                'name': original_name,
+                                'content': json.load(f)
+                            }
+                        except json.JSONDecodeError:
+                            print(f"Error decoding JSON file: {lines}")
+                            line_objects[root] = {}
+                    number += 1
+            else : 
+                index = int(parts[0])
+                original_name = '_'.join(parts[1:-1])
+                with open(os.path.join(processed_folder, lines), 'r') as f:
+                    try:
+                        line_objects[number] = {
+                            'name': original_name,
+                            'content': json.load(f)
+                        }
+                    except json.JSONDecodeError:
+                        print(f"Error decoding JSON file: {lines}")
+                        line_objects[root] = {}
+                number += 1
                     
     # Read angle data from CSV
     csv_file_path = os.path.join(processed_folder, 'angles.csv')
@@ -466,7 +521,6 @@ def batch_inference(data):
             seg = foot_lateral_segmentation('static/models/kind_detection_yolov8_model.pt',*seglist)
             #total processing count
             image_number = len([f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'))])
-            image_number
             count = 0
             file.status = 'processing'
             db.session.commit()
@@ -494,7 +548,6 @@ def batch_inference(data):
                     # results = process.cropping()
 
                     num_boxes = len(results)
-                    print(f'number is {num_boxes}')
 
                     if num_boxes == 1 :
                         image = results[0]['image']
@@ -533,6 +586,7 @@ def batch_inference(data):
                         writer.writerow({key:root if key=='image_name' else 'n/a' for key in fieldnames})
 
                     elif num_boxes >= 2:
+                        image_number += (num_boxes - 1)
                         number = 1
                         resized_original_image = size_regurizer(original_image)
                         for result in results : 
@@ -542,7 +596,7 @@ def batch_inference(data):
 
                             _, masks = seg.segmentation(image)
 
-                            seg.to_JPG(resized_original_image, os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{number}_original{ext}'))
+                            seg.to_JPG(resized_original_image, os.path.join(image_folder, 'Processed', f'{index+1}-{number}_{root}_original{ext}'))
                             
                             masks = {key: seg.returned(original_image, image, box) for key, image in masks.items()}
                             masks = {key: size_regurizer(image) for key, image in masks.items()}
@@ -555,7 +609,7 @@ def batch_inference(data):
                                 decay_contour = clean_mask.decay_contour(arc_contour) 
                                 cleaned_masks[input] = decay_contour
 
-                                output_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{number}_{input}{ext}')
+                                output_path = os.path.join(image_folder, 'Processed', f'{index+1}-{number}_{root}_{input}{ext}')
                                 seg.to_JPG(cleaned_masks[input],output_path)
                             
 
@@ -563,14 +617,14 @@ def batch_inference(data):
                             data = post_data.postProcess()
 
 
-                            file_path = os.path.join(image_folder, 'Processed', f'{index+1}_{root}_{number}_postline.json')
+                            file_path = os.path.join(image_folder, 'Processed', f'{index+1}-{number}_{root}_postline.json')
                             with open(file_path, 'w') as json_file:
                                 json.dump(data, json_file, cls=NumpyEncoder, indent=4)
                                 
-                            writer.writerow({key:root if key==f'{number}_image_name' else 'n/a' for key in fieldnames})
+                            writer.writerow({key:f'{root}_{number}'if key==f'image_name' else 'n/a' for key in fieldnames})
                             number += 1
-                        count += 1
-                        socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/image_number * 100, 1)})
+                            count += 1
+                            socketio.emit('inference_progress', {'file_id': file_id, 'progress': round(count/image_number * 100, 1)})
 
 
 
