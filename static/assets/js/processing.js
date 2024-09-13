@@ -1,6 +1,6 @@
-// console.log(originalImages);
-// console.log(segmentedImages);
-// console.log(lineObjects);
+console.log(originalImages);
+console.log(segmentedImages);
+console.log(lineObjects);
 
 const selectedAngles = file.selected_angles;
 
@@ -361,7 +361,7 @@ function saveAndExportData() {
 
   for (let i = 1; i < table.rows.length; i++) {
     let row = table.rows[i];
-    let rowData = { image_name: row.cells[0].textContent };
+    let rowData = { image_name: row.cells[0].textContent.trim() };
 
     selectedAngles.forEach((selectedAngle, index) => {
       let selectedAngle_csvStyle = selectedAngle
@@ -371,6 +371,7 @@ function saveAndExportData() {
         row.cells[index + 1].getElementsByTagName("span")[0].textContent;
     });
     data.push(rowData);
+    console.log(rowData['image_name']);
   }
 
   fetch(`/save_and_download/${file.id}`, {
@@ -767,6 +768,10 @@ function updateSelectedRow() {
 }
 
 function updateAllCanvases() {
+  document.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+    checkbox.checked = true;
+  });
+
   updateGlobalId();
 
   updateBackground(stage, layer);
