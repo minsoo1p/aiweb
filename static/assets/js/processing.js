@@ -195,7 +195,7 @@ function updateBackground(targetStage, targetLayer) {
     addSegmentedImage("m1");
     addSegmentedImage("tal");
   }
-
+  confirmSave;
   // Load and process images
   Promise.all([
     new Promise((resolve, reject) => {
