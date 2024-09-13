@@ -307,15 +307,10 @@ def processing(project_id, file_id):
     for img in sorted(os.listdir(processed_folder)):
         if img.lower().endswith(('original.png', 'original.jpg', 'original.jpeg')):
             index = img.split('_')[0]
-            if '-' in index : 
-                primary_index = index.split('-')[0]
-                secondary_index = index.split('-')[1]
-                for numb in range(int(secondary_index)) :
-                    preprocessed_images[number] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
-                    number += 1
-            else : 
-                preprocessed_images[number] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
-                number += 1 
+            preprocessed_images[number] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
+            number += 1
+
+
 
     # preprocessed_images = [url_for('static', filename=f'image/{file.image_data}/Processed/{img}') 
     #                     for img in sorted(os.listdir(os.path.join(folder_path, 'Processed')), key=lambda file: int(file.split('_')[0])) 
@@ -386,35 +381,18 @@ def processing(project_id, file_id):
         if lines.lower().endswith('.json'):
             root, ext = os.path.splitext(lines)
             parts = root.split('_')
-            if '-' in parts[0] :
-                primary_index = parts[0].split('-')[0]
-                secondary_index = parts[0].split('-')[1]
-                for numb in range(int(secondary_index)) : 
-                    original_name = '_'.join(parts[1:-1])
-                    with open(os.path.join(processed_folder, lines), 'r') as f:
-                        try:
-                            line_objects[number] = {
-                                'name': original_name,
-                                'content': json.load(f)
-                            }
-                        except json.JSONDecodeError:
-                            print(f"Error decoding JSON file: {lines}")
-                            line_objects[root] = {}
-                    number += 1
-            else : 
-                index = int(parts[0])
-                original_name = '_'.join(parts[1:-1])
-                with open(os.path.join(processed_folder, lines), 'r') as f:
-                    try:
-                        line_objects[number] = {
-                            'name': original_name,
-                            'content': json.load(f)
-                        }
-                    except json.JSONDecodeError:
-                        print(f"Error decoding JSON file: {lines}")
-                        line_objects[root] = {}
-                number += 1
-                    
+            original_name = '_'.join(parts[1:-1])
+            with open(os.path.join(processed_folder, lines), 'r') as f:
+                try:
+                    line_objects[number] = {
+                        'name': original_name,
+                        'content': json.load(f)
+                    }
+                except json.JSONDecodeError:
+                    print(f"Error decoding JSON file: {lines}")
+                    line_objects[root] = {}
+            number += 1
+
     # Read angle data from CSV
     csv_file_path = os.path.join(processed_folder, 'angles.csv')
     angle_data = []
