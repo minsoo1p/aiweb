@@ -144,24 +144,36 @@
                 </div>
               </td>
               <td style="padding: 0.3em 0.5em; vertical-align:middle;">
-                <div class="inference-container">
-                  <a
+                <div class="inference-container" data-file-id="{{ file.id }}" data-project-id="{{ project_id }}">
+                  <button onclick="startInference({{ project_id }}, {{ file.id }})"
+                          class="button run {% if file.status != 'pending' %}disabled{% endif %}"
+                          style="height: 2.6rem; font-size: 0.8rem"
+                          {% if file.status != 'pending' %}disabled{% endif %}>
+                          <i class="fa-solid fa-circle-play fa-lg"></i>Run
+                  </button>
+                  <!-- <a
                     href="#"
                     class="button run {% if file.status != 'pending' %}disabled{% endif %}"
                     style="height: 2.6rem; font-size: 0.8rem"
                     {% if file.status == 'pending' %}onclick="startInference({{ project_id }}, {{ file.id }})"{% endif %}
                     {% if file.status != 'pending' %}disabled{% endif %}
                     ><i class="fa-solid fa-circle-play fa-lg"></i> Run</a
-                  >
+                  > -->
                   <span id="status-{{ file.id }}" class="status">
                     {% if file.status == 'processing' %}
-                        <span class="processing"><i class="fa-solid fa-spinner fa-lg rotate"></i> Processing</span>
+                        <span class="processing"><i class="fa-solid fa-spinner fa-lg rotate"></i> Processing <span class="progress">0</span>%</span>
                     {% elif file.status == 'completed' %}
                         <span class="completed"><i class="fa-regular fa-circle-check fa-xl" style="color: #63E6BE;"></i> Completed</span>
                     {% elif file.status == 'failed' %}
                         <span class="failed"><i class="fa-regular fa-circle-xmark fa-xl" style="color: #ff0000;"></i> Failed</span>
                     {% endif %}
                   </span>
+                  <!-- <div class="progress-bar">
+                    <div id="progress-{{ file.id }}" class="progress" style="width: 0%;">0%</div>
+                  </div>
+                  <span id="status-{{ file.id }}" class="status {{ file.status }}">
+                    {{ file.status.capitalize() }}
+                  </span> -->
                 </div>
               </td>
               <td style="text-align: right; vertical-align:middle;">
@@ -456,7 +468,6 @@
         });
 
         var pageLoadType = performance.getEntriesByType("navigation")[0].type;
-        console.log(pageLoadType);
 
         // 뒤로가기로 돌아온 경우 0.01초 후에 새로고침
         if (pageLoadType === 'back_forward') {
@@ -466,8 +477,93 @@
         }
       })
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script>
     <script>
+      // javascript for progress long-polling
+      function startInference(projectId, fileId) {
+        const button = document.querySelector(`button[onclick="startInference(${projectId}, ${fileId})"]`);
+        if (button && !button.classList.contains('disabled')) {
+          fetch(`/batch_inference/${projectId}/${fileId}`, { method: 'POST' })
+          .then(response => response.json())
+          .then(data => {
+              updateStatus(fileId, data.status);
+              updateProgress(fileId, data.progress);
+              if (data.status === "processing") {
+                  pollInferenceStatus(projectId, fileId);
+              }
+          })
+          .catch(error => console.error('Error:', error));
+
+          button.classList.add('disabled');
+          button.onclick = null;
+        }
+
+
+      }
+    
+      function pollInferenceStatus(projectId, fileId) {
+          const pollInterval = setInterval(() => {
+              fetch(`/batch_inference/${projectId}/${fileId}`)
+                  .then(response => response.json())
+                  .then(data => {
+                      updateStatus(fileId, data.status);
+                      updateProgress(fileId, data.progress);
+                      if (data.status === 'completed' || data.status === 'failed') {
+                          clearInterval(pollInterval);
+                      }
+                  })
+                  .catch(error => {
+                      console.error('Error:', error);
+                      clearInterval(pollInterval);
+                  });
+          }, 1000); // 1초마다 상태 확인
+        }
+
+      function updateProgress(fileId, progress) {
+          const statusElement = document.getElementById(`status-${fileId}`);
+          const progressElement = statusElement.querySelector('.progress')
+          if (progressElement) {
+              progressElement.textContent = `${progress.toFixed(1)}`;
+          }
+      }
+      
+      function updateStatus(fileId, status) {
+          const statusElement = document.getElementById(`status-${fileId}`);
+          const link = document.getElementById(`link-${fileId}`);
+          if (statusElement) {
+            if (status === 'processing') {
+              statusElement.innerHTML = '<span class="processing"><i class="fa-solid fa-spinner fa-lg rotate"></i> Processing <span class="progress">0</span>%</span>'
+            } else if (status === 'completed') {
+              statusElement.innerHTML = '<span class="completed"><i class="fa-regular fa-circle-check fa-xl" style="color: #63E6BE;"></i> Completed</span>'
+              
+              if (link) {
+                link.classList.remove('disabled-link');
+                link.onclick = null;
+              }
+            } else if (status === 'failed') {
+              statusElement.innerHTML = '<span class="failed"><i class="fa-regular fa-circle-xmark fa-xl" style="color: #ff0000;"></i> Failed</span>'
+            } else {
+              console.error('Invalid status');
+            }
+
+          }
+      }
+
+      document.addEventListener('DOMContentLoaded', function() {
+        document.querySelectorAll('.inference-container').forEach(container => {
+            const fileId = container.dataset.fileId;
+            const projectId = container.dataset.projectId;
+            const status = container.querySelector('.status').textContent.toLowerCase();
+
+            console.log(fileId, projectId, status);
+            
+            if (status.includes('processing')) {
+                pollInferenceStatus(projectId, fileId);
+            }
+        });
+      });
+    </script>
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script> -->
+    <!-- <script>
       // Javascript for SocketIO
       var socket = io();
     
@@ -516,7 +612,7 @@
             button.onclick = null;
           }
       });
-    </script>
+    </script> -->
 
     <script src="{{ url_for('static', filename='assets/js/jquery.min.js') }}"></script>
     <script src="{{ url_for('static', filename='assets/js/jquery.scrollex.min.js') }}"></script>
