@@ -41,19 +41,19 @@
       }
 
       .file-list {
-          position: absolute;
-          top: 0.2rem;
-          left: 0.2rem;
-          text-align: start;
-          width: 95%;
-          height: 95%;
-          overflow: auto;
+        position: absolute;
+        top: 0.2rem;
+        left: 0.2rem;
+        text-align: start;
+        width: 95%;
+        height: 95%;
+        overflow: auto;
       }
 
       .rotate {
-        animation: spin 2s linear infinite; 
+        animation: spin 2s linear infinite;
       }
-  
+
       @keyframes spin {
         0% {
           transform: rotate(0deg);
@@ -125,31 +125,67 @@
           <tbody>
             {% for file in files %}
             <tr>
-              <td style="padding: 0.5em 0.5em; vertical-align:middle;">
+              <td style="padding: 0.5em 0.5em; vertical-align: middle">
                 <a
                   href="{{ url_for('delete_file', project_number=project_id, file_id=file.id) }}"
                   class="fa-solid fa-square-minus"
-                  style="text-decoration: none;"
+                  style="text-decoration: none"
                 ></a>
               </td>
-              <td style="padding: 0.5em 0.5em; vertical-align:middle;">{{ file.name1 }}</td>
-              <td style="padding: 0.5em 0.5em; vertical-align:middle;">{{ file.name2 }}</td>
-              <td style="padding: 0.5em 0.5em; vertical-align:middle;">{{ file.image_number }}</td>
-              <td style="padding: 0.5em 0.5em; vertical-align:middle;">{{ file.file_time }}</td>
-              <td style="padding: 0em 0.5em; vertical-align:middle;max-width: 40rem;">
-                <div style="white-space: nowrap; overflow-x: auto; ">
+              <td style="padding: 0.5em 0.5em; vertical-align: middle">
+                {{ file.name1 }}
+              </td>
+              <td style="padding: 0.5em 0.5em; vertical-align: middle">
+                {{ file.name2 }}
+              </td>
+              <td style="padding: 0.5em 0.5em; vertical-align: middle">
+                {{ file.image_number }}
+              </td>
+              <td style="padding: 0.5em 0.5em; vertical-align: middle">
+                {{ file.file_time }}
+              </td>
+              <td
+                style="
+                  padding: 0em 0.5em;
+                  vertical-align: middle;
+                  max-width: 40rem;
+                "
+              >
+                <div style="white-space: nowrap; overflow-x: auto">
                   {% for angle in file.selected_angles %}
-                  <ul style="font-size: 1.1rem; display: inline; margin: 0; padding-right: 1em; padding-left: 0;">{{ angle }}</ul>
+                  <ul
+                    style="
+                      font-size: 1.1rem;
+                      display: inline;
+                      margin: 0;
+                      padding-right: 1em;
+                      padding-left: 0;
+                    "
+                  >
+                    {{ angle }}
+                  </ul>
                   {% endfor %}
                 </div>
               </td>
-              <td style="padding: 0.3em 0.5em; vertical-align:middle;">
-                <div class="inference-container" data-file-id="{{ file.id }}" data-project-id="{{ project_id }}">
-                  <button onclick="startInference({{ project_id }}, {{ file.id }})"
-                          class="button run {% if file.status != 'pending' %}disabled{% endif %}"
-                          style="height: 2.6rem; font-size: 0.8rem"
-                          {% if file.status != 'pending' %}disabled{% endif %}>
-                          <i class="fa-solid fa-circle-play fa-lg"></i>Run
+              <td style="padding: 0.3em 0.5em; vertical-align: middle">
+                <div
+                  class="inference-container"
+                  data-file-id="{{ file.id }}"
+                  data-project-id="{{ project_id }}"
+                >
+                  <button
+                    onclick="startInference({{ project_id }}, {{ file.id }})"
+                    class="button run {% if file.status != 'pending' %}disabled{% endif %}"
+                    style="height: 2.6rem; font-size: 0.8rem"
+                    {%
+                    if
+                    file.status
+                    !="pending"
+                    %}disabled{%
+                    endif
+                    %}
+                  >
+                    <i class="fa-solid fa-circle-play fa-lg"></i>Run
                   </button>
                   <!-- <a
                     href="#"
@@ -161,11 +197,26 @@
                   > -->
                   <span id="status-{{ file.id }}" class="status">
                     {% if file.status == 'processing' %}
-                        <span class="processing"><i class="fa-solid fa-spinner fa-lg rotate"></i> Processing <span class="progress">0</span>%</span>
+                    <span class="processing"
+                      ><i class="fa-solid fa-spinner fa-lg rotate"></i>
+                      Processing <span class="progress">0</span>%</span
+                    >
                     {% elif file.status == 'completed' %}
-                        <span class="completed"><i class="fa-regular fa-circle-check fa-xl" style="color: #63E6BE;"></i> Completed</span>
+                    <span class="completed"
+                      ><i
+                        class="fa-regular fa-circle-check fa-xl"
+                        style="color: #63e6be"
+                      ></i>
+                      Completed</span
+                    >
                     {% elif file.status == 'failed' %}
-                        <span class="failed"><i class="fa-regular fa-circle-xmark fa-xl" style="color: #ff0000;"></i> Failed</span>
+                    <span class="failed"
+                      ><i
+                        class="fa-regular fa-circle-xmark fa-xl"
+                        style="color: #ff0000"
+                      ></i>
+                      Failed</span
+                    >
                     {% endif %}
                   </span>
                   <!-- <div class="progress-bar">
@@ -176,14 +227,21 @@
                   </span> -->
                 </div>
               </td>
-              <td style="text-align: right; vertical-align:middle;">
-                <a href="{{ url_for('processing', project_id = project_id, file_id = file.id) }}"
-                id="link-{{ file.id }}"
-                class="fa-solid fa-chevron-right {% if file.status != 'completed' %}disabled-link{% endif %}"
-                style="text-decoration: none;"
-                {% if file.status != 'completed' %}
-                onclick="return false;"
-                {% endif %}
+              <td style="text-align: right; vertical-align: middle">
+                <a
+                  href="{{ url_for('processing', project_id = project_id, file_id = file.id) }}"
+                  id="link-{{ file.id }}"
+                  class="fa-solid fa-chevron-right {% if file.status != 'completed' %}disabled-link{% endif %}"
+                  style="text-decoration: none"
+                  {%
+                  if
+                  file.status
+                  !="completed"
+                  %}
+                  onclick="return false;"
+                  {%
+                  endif
+                  %}
                 ></a>
               </td>
             </tr>
@@ -202,7 +260,7 @@
         >
           <div class="container">
             <div class="row">
-              <div class="col-3 col-8-small" style="min-width: 16rem;">
+              <div class="col-3 col-8-small" style="min-width: 16rem">
                 <select name="location" id="location" required>
                   <option value="" selected disabled hidden>Location</option>
                   <option value="Foot">Foot</option>
@@ -218,9 +276,11 @@
                 </select>
               </div>
 
-              <div class="col-3 col-8-small" style="min-width: 16rem;">
+              <div class="col-3 col-8-small" style="min-width: 16rem">
                 <select name="view" id="view" required>
-                  <option value="" selected disabled hidden>Type Of Image</option>
+                  <option value="" selected disabled hidden>
+                    Type Of Image
+                  </option>
                   <option value="AnteroPosterior">AnteroPosterior</option>
                   <option value="Lateral">Lateral</option>
                   <option value="Translateral">Translateral</option>
@@ -238,49 +298,87 @@
                 </select>
               </div>
 
-              <div class="col-3 col-8-small" style="min-width: 16rem;">
+              <div class="col-3 col-8-small" style="min-width: 16rem">
                 <div class="multiselect-dropdown">
                   <div class="select-box" onclick="toggleDropdown()">
-                      <select>
-                          <option>Select Angles</option>
-                      </select>
-                      <div class="over-select"></div>
+                    <select>
+                      <option>Select Angles</option>
+                    </select>
+                    <div class="over-select"></div>
                   </div>
-              
+
                   <div id="checkboxes" class="checkboxes">
-                      <label for="option1">
-                          <input type="checkbox" id="option1" name="angles" value="TibioCalcaneal Angle"/>TibioCalcaneal Angle
-                      </label>
-                      <label for="option2">
-                          <input type="checkbox" id="option2" name="angles" value="TaloCalcaneal Angle"/>TaloCalcaneal Angle
-                      </label>
-                      <label for="option3">
-                          <input type="checkbox" id="option3" name="angles" value="Calcaneal Pitch"/>Calcaneal Pitch
-                      </label>
-                      <label for="option4">
-                          <input type="checkbox" id="option4" name="angles" value="Meary's Angle"/>Meary's Angle
-                      </label>
+                    <label for="option1">
+                      <input
+                        type="checkbox"
+                        id="option1"
+                        name="angles"
+                        value="TibioCalcaneal Angle"
+                      />TibioCalcaneal Angle
+                    </label>
+                    <label for="option2">
+                      <input
+                        type="checkbox"
+                        id="option2"
+                        name="angles"
+                        value="TaloCalcaneal Angle"
+                      />TaloCalcaneal Angle
+                    </label>
+                    <label for="option3">
+                      <input
+                        type="checkbox"
+                        id="option3"
+                        name="angles"
+                        value="Calcaneal Pitch"
+                      />Calcaneal Pitch
+                    </label>
+                    <label for="option4">
+                      <input
+                        type="checkbox"
+                        id="option4"
+                        name="angles"
+                        value="Meary's Angle"
+                      />Meary's Angle
+                    </label>
                   </div>
                 </div>
               </div>
 
               <div class="col-3"></div>
-
             </div>
 
-            <div class="row" style="padding-top: 0.7rem; align-items: flex-end;">
-              <div class="col-6 col-8-small" style="min-width: 16rem;">
+            <div class="row" style="padding-top: 0.7rem; align-items: flex-end">
+              <div class="col-6 col-8-small" style="min-width: 16rem">
                 <div id="dropzone" class="dropzone">
-                  <div style="padding-top: 0.5rem;">Drag & Drop Files here &nbsp;&nbsp;&nbsp;&nbsp; or &nbsp;&nbsp;&nbsp;&nbsp;
-                    <input type="file" name="files[]" id="file-input" accept="image/*" multiple style="display: none;" />
-                    <button type="button" id="file-upload-btn" class="button primary">Browse Files</button>
+                  <div style="padding-top: 0.5rem">
+                    Drag & Drop Files here &nbsp;&nbsp;&nbsp;&nbsp; or
+                    &nbsp;&nbsp;&nbsp;&nbsp;
+                    <input
+                      type="file"
+                      name="files[]"
+                      id="file-input"
+                      accept="image/*"
+                      multiple
+                      style="display: none"
+                    />
+                    <button
+                      type="button"
+                      id="file-upload-btn"
+                      class="button primary"
+                    >
+                      Browse Files
+                    </button>
                   </div>
                 </div>
               </div>
 
               <div class="col-3 col-8-small" style="min-width: 16rem">
                 <div class="dropzone">
-                  <div id="file-list" class="file-list" style="font-size: 1.1rem; padding: 1rem"> 
+                  <div
+                    id="file-list"
+                    class="file-list"
+                    style="font-size: 1.1rem; padding: 1rem"
+                  >
                     <span class="placeholder">Uploaded Images</span>
                   </div>
                 </div>
@@ -388,7 +486,7 @@
           fileItem.textContent = file.name;
           fileList.appendChild(fileItem);
         }
-      } 
+      }
 
       dropzone.addEventListener("dragover", (e) => {
         e.preventDefault();
@@ -433,133 +531,141 @@
       let expanded = false;
 
       function toggleDropdown() {
-          const checkboxes = document.getElementById("checkboxes");
-          if (!expanded) {
-              checkboxes.style.display = "block";
-              expanded = true;
-          } else {
-              checkboxes.style.display = "none";
-              expanded = false;
-          }
+        const checkboxes = document.getElementById("checkboxes");
+        if (!expanded) {
+          checkboxes.style.display = "block";
+          expanded = true;
+        } else {
+          checkboxes.style.display = "none";
+          expanded = false;
+        }
       }
 
       document.addEventListener("click", function (event) {
-          const dropdown = document.querySelector(".multiselect-dropdown");
-          if (!dropdown.contains(event.target)) {
-              document.getElementById("checkboxes").style.display = "none";
-              expanded = false;
-          }
+        const dropdown = document.querySelector(".multiselect-dropdown");
+        if (!dropdown.contains(event.target)) {
+          document.getElementById("checkboxes").style.display = "none";
+          expanded = false;
+        }
       });
     </script>
     <script>
       // Javascript for restriction
       function handleDisabledLinkClick(e) {
-        if (e.currentTarget.classList.contains('disabled-link')) {
-            e.preventDefault();
-            alert('Processing is not completed yet. Please click RUN button and wait until the processing is finished.');
+        if (e.currentTarget.classList.contains("disabled-link")) {
+          e.preventDefault();
+          alert(
+            "Processing is not completed yet. Please click RUN button and wait until the processing is finished."
+          );
         }
       }
     </script>
     <script>
-      document.addEventListener('DOMContentLoaded', function() {
+      document.addEventListener("DOMContentLoaded", function () {
         var Links = document.querySelectorAll('[id^="link-"]');
-        Links.forEach(function(link) {
-            link.addEventListener('click', handleDisabledLinkClick);
+        Links.forEach(function (link) {
+          link.addEventListener("click", handleDisabledLinkClick);
         });
 
         var pageLoadType = performance.getEntriesByType("navigation")[0].type;
 
         // 뒤로가기로 돌아온 경우 0.01초 후에 새로고침
-        if (pageLoadType === 'back_forward') {
-            setTimeout(function() {
-              location.reload();
-            }, 10);
+        if (pageLoadType === "back_forward") {
+          setTimeout(function () {
+            location.reload();
+          }, 10);
         }
-      })
+      });
     </script>
     <script>
       // javascript for progress long-polling
       function startInference(projectId, fileId) {
-        const button = document.querySelector(`button[onclick="startInference(${projectId}, ${fileId})"]`);
-        if (button && !button.classList.contains('disabled')) {
-          fetch(`/batch_inference/${projectId}/${fileId}`, { method: 'POST' })
-          .then(response => response.json())
-          .then(data => {
+        const button = document.querySelector(
+          `button[onclick="startInference(${projectId}, ${fileId})"]`
+        );
+        if (button && !button.classList.contains("disabled")) {
+          fetch(`/batch_inference/${projectId}/${fileId}`, { method: "POST" })
+            .then((response) => response.json())
+            .then((data) => {
               updateStatus(fileId, data.status);
               updateProgress(fileId, data.progress);
               if (data.status === "processing") {
-                  pollInferenceStatus(projectId, fileId);
+                pollInferenceStatus(projectId, fileId);
               }
-          })
-          .catch(error => console.error('Error:', error));
+            })
+            .catch((error) => console.error("Error:", error));
 
-          button.classList.add('disabled');
+          button.classList.add("disabled");
           button.onclick = null;
         }
-
-
       }
-    
+
       function pollInferenceStatus(projectId, fileId) {
-          const pollInterval = setInterval(() => {
-              fetch(`/batch_inference/${projectId}/${fileId}`)
-                  .then(response => response.json())
-                  .then(data => {
-                      updateStatus(fileId, data.status);
-                      updateProgress(fileId, data.progress);
-                      if (data.status === 'completed' || data.status === 'failed') {
-                          clearInterval(pollInterval);
-                      }
-                  })
-                  .catch(error => {
-                      console.error('Error:', error);
-                      clearInterval(pollInterval);
-                  });
-          }, 1000); // 1초마다 상태 확인
-        }
+        const pollInterval = setInterval(() => {
+          fetch(`/batch_inference/${projectId}/${fileId}`)
+            .then((response) => response.json())
+            .then((data) => {
+              updateStatus(fileId, data.status);
+              updateProgress(fileId, data.progress);
+              if (data.status === "completed" || data.status === "failed") {
+                clearInterval(pollInterval);
+              }
+            })
+            .catch((error) => {
+              console.error("Error:", error);
+              clearInterval(pollInterval);
+            });
+        }, 1000); // 1초마다 상태 확인
+      }
 
       function updateProgress(fileId, progress) {
-          const statusElement = document.getElementById(`status-${fileId}`);
-          const progressElement = statusElement.querySelector('.progress')
-          if (progressElement) {
-              progressElement.textContent = `${progress.toFixed(1)}`;
-          }
+        const statusElement = document.getElementById(`status-${fileId}`);
+        const progressElement = statusElement.querySelector(".progress");
+        if (progressElement) {
+          progressElement.textContent = `${Math.round(progress)}`;
+        }
       }
-      
+
       function updateStatus(fileId, status) {
-          const statusElement = document.getElementById(`status-${fileId}`);
-          const link = document.getElementById(`link-${fileId}`);
-          if (statusElement) {
-            if (status === 'processing') {
-              statusElement.innerHTML = '<span class="processing"><i class="fa-solid fa-spinner fa-lg rotate"></i> Processing <span class="progress">0</span>%</span>'
-            } else if (status === 'completed') {
-              statusElement.innerHTML = '<span class="completed"><i class="fa-regular fa-circle-check fa-xl" style="color: #63E6BE;"></i> Completed</span>'
-              
-              if (link) {
-                link.classList.remove('disabled-link');
-                link.onclick = null;
-              }
-            } else if (status === 'failed') {
-              statusElement.innerHTML = '<span class="failed"><i class="fa-regular fa-circle-xmark fa-xl" style="color: #ff0000;"></i> Failed</span>'
-            } else {
-              console.error('Invalid status');
-            }
+        const statusElement = document.getElementById(`status-${fileId}`);
+        const link = document.getElementById(`link-${fileId}`);
+        if (statusElement) {
+          if (status === "processing") {
+            statusElement.innerHTML =
+              '<span class="processing"><i class="fa-solid fa-spinner fa-lg rotate"></i> Processing <span class="progress">0</span>%</span>';
+          } else if (status === "completed") {
+            statusElement.innerHTML =
+              '<span class="completed"><i class="fa-regular fa-circle-check fa-xl" style="color: #63E6BE;"></i> Completed</span>';
 
+            if (link) {
+              link.classList.remove("disabled-link");
+              link.onclick = null;
+            }
+          } else if (status === "failed") {
+            statusElement.innerHTML =
+              '<span class="failed"><i class="fa-regular fa-circle-xmark fa-xl" style="color: #ff0000;"></i> Failed</span>';
+          } else {
+            console.error("Invalid status");
           }
+        }
       }
 
-      document.addEventListener('DOMContentLoaded', function() {
-        document.querySelectorAll('.inference-container').forEach(container => {
+      document.addEventListener("DOMContentLoaded", function () {
+        document
+          .querySelectorAll(".inference-container")
+          .forEach((container) => {
             const fileId = container.dataset.fileId;
             const projectId = container.dataset.projectId;
-            const status = container.querySelector('.status').textContent.toLowerCase();
+            const status = container
+              .querySelector(".status")
+              .textContent.toLowerCase();
 
             console.log(fileId, projectId, status);
-            
-            if (status.includes('processing')) {
-                pollInferenceStatus(projectId, fileId);
+
+            if (status.includes("processing")) {
+              pollInferenceStatus(projectId, fileId);
             }
-        });
+          });
       });
     </script>
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.0.1/socket.io.js"></script> -->

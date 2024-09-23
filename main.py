@@ -85,7 +85,7 @@ class File(db.Model):
     file_time = db.Column(db.String(100))
     project_id = db.Column(db.Integer, db.ForeignKey('project.id'), nullable=False)
     status = db.Column(db.String, default='pending')
-    progress = db.Column(db.Float, default=0)
+    progress = db.Column(db.Integer, default=0)
     
 # class DataTable(db.Model):
 #     __tablename__ = 'data_table'
@@ -731,7 +731,7 @@ def run_inference(project_id, file_id):
                     writer.writerow({key:root if key=='image_name' else 'n/a' for key in fieldnames})
                     
                     count += 1
-                    file.progress = (count / image_number) * 100
+                    file.progress = int((count / image_number) * 100)
                     db.session.commit()
 
                 elif num_boxes >= 2:
@@ -774,7 +774,7 @@ def run_inference(project_id, file_id):
                         
                         number += 1
                         count += 1
-                        file.progress = (count / image_number) * 100
+                        file.progress = int((count / image_number) * 100)
                         db.session.commit()
 
         file.status = 'completed'
@@ -789,4 +789,4 @@ def run_inference(project_id, file_id):
     # return redirect(url_for('file', project_number=project_id))
 
 if __name__ == '__main__':
-    app.run(debug=False)
+    app.run(debug=True)
