@@ -13,12 +13,18 @@ from ultralytics import YOLO
 import numpy as np
 from shapely.geometry import box
 
-def custom_nms(boxes, scores, classes, iou_threshold=0.1):
+def custom_nms(boxes, scores, classes, iou_threshold=0.1, prob_threshold=0.5):
+    # 먼저 확률 임계값을 적용하여 낮은 확률의 박스들을 필터링합니다
+    high_prob_indices = np.where(scores > prob_threshold)[0]
+    boxes = boxes[high_prob_indices]
+    scores = scores[high_prob_indices]
+    classes = classes[high_prob_indices]
+
     order = scores.argsort()[::-1]
     keep = []
     while order.size > 0:
         i = order[0]
-        keep.append(i)
+        keep.append(high_prob_indices[i])  # 원래 인덱스를 유지
         if order.size == 1:
             break
         ious = np.array([compute_iou(boxes[i], boxes[j]) for j in order[1:]])
@@ -32,6 +38,7 @@ def compute_iou(box1, box2):
     intersection = poly1.intersection(poly2).area
     union = poly1.union(poly2).area
     return intersection / union if union > 0 else 0
+
 
 # yolo_model_path = 'static\models\kind_detection_yolov8_model.pt'
 
@@ -146,7 +153,7 @@ class foot_lateral_segmentation :
 
         if len(scores) > 0:
             # 커스텀 NMS 적용
-            keep = custom_nms(boxes, scores, classes, iou_threshold=0.1)
+            keep = custom_nms(boxes, scores, classes, iou_threshold=0.1, prob_threshold=0.5)
 
             # 선택된 박스, 점수, 클래스만 유지
             filtered_boxes = boxes[keep]
