@@ -55,8 +55,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
 app.config['UPLOAD_FOLDER'] = 'static/image'
 
 # RunPod API 설정
-API_ENDPOINT = "https://api.runpod.ai/v2/l37npyj8h75uao/runsync"
-API_KEY = "L39BTIDEE6HQFGH5RWFSYVHUSBS6K7V57QGC435L"
+API_ENDPOINT = "https://api.runpod.ai/v2/9k550qnu83u0a1/runsync"
+API_KEY = "07SQGVMUUV7GMN6V4JC7GLEF7290ZA8T0BPT61GZ"
 
 count = 0
 image_number = 0

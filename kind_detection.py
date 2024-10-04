@@ -2,7 +2,7 @@ import cv2
 from ultralytics import YOLO
 import numpy as np
 
-# model_path = 'static\models\kind_detection_yolov8_model.pt'
+# model_path = 'static\models\footLat_detection_yolov8_1_model.pt'
 model_path = 'static/models/kind_detection_yolov8_model.pt'
 model = YOLO(model_path)
 # test_image_path = 'static\images\혼종.jpg' 
