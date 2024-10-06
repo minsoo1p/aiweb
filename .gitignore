@@ -6,6 +6,8 @@ static/image
 static/models/
 *.log
 /build/
+Dockerfile
+*.zip
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
