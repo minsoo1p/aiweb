@@ -291,7 +291,11 @@ def processing(project_id, file_id):
 
     preprocessed_images = {}
     number = 1
-    for img in sorted(os.listdir(processed_folder)):
+    for img in sorted(os.listdir(processed_folder),
+                      key=lambda x: (
+                          int(x.split('_')[0].split('-')[0]) if '_' in x else float('inf'),
+                          int(x.split('_')[0].split('-')[1]) if '-' in x.split('_')[0] else 0
+                      )):
         if img.lower().endswith(('original.png', 'original.jpg', 'original.jpeg')):
             index = img.split('_')[0]
             preprocessed_images[number] = url_for('static', filename=f'image/{file.image_data}/Processed/{img}')
@@ -300,7 +304,11 @@ def processing(project_id, file_id):
     segmented_images = {}
     number = 0
     guide = ''
-    for img in sorted(os.listdir(processed_folder)):
+    for img in sorted(os.listdir(processed_folder),
+                      key=lambda x: (
+                          int(x.split('_')[0].split('-')[0]) if '_' in x else float('inf'),
+                          int(x.split('_')[0].split('-')[1]) if '-' in x.split('_')[0] else 0
+                      )):
         if img.lower().endswith(('.png', '.jpg', '.jpeg')) and not img.lower().endswith(('_original.png', '_original.jpg', '_original.jpeg')):
             root, ext = os.path.splitext(img)
             parts = root.split('_')
@@ -342,7 +350,11 @@ def processing(project_id, file_id):
 
     number = 1
     line_objects = {}
-    for lines in sorted(os.listdir(processed_folder)):
+    for lines in sorted(os.listdir(processed_folder),
+                        key=lambda x: (
+                          int(x.split('_')[0].split('-')[0]) if '_' in x else float('inf'),
+                          int(x.split('_')[0].split('-')[1]) if '-' in x.split('_')[0] else 0
+                      )):
         if lines.lower().endswith('.json'):
             root, ext = os.path.splitext(lines)
             parts = root.split('_')
@@ -488,7 +500,8 @@ async def process_images_runpod(file_id):
     
     async with aiohttp.ClientSession() as session:
         tasks = []
-        for index, image_file in enumerate(sorted([f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'))])):
+        for index, image_file in enumerate(sorted([f for f in os.listdir(image_folder) if f.endswith(('.png', '.jpg', '.jpeg', '.PNG', '.JPG', '.JPEG'))],
+                                                  key=lambda x: str(os.path.splitext(x)[0]))):
             task = send_request(session, file_id, index, image_file)
             tasks.append(task)
             
@@ -497,7 +510,7 @@ async def process_images_runpod(file_id):
     with open(csv_file_path, 'w', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=fieldnames)
         writer.writeheader()
-        for item in sorted(image_names, key=lambda x: x["image_name"]):
+        for item in sorted(image_names, key=lambda x: str(x["image_name"])):
             writer.writerow({key: item['image_name'] if key == 'image_name' else 'n/a' for key in fieldnames})
             
     image_names = []
