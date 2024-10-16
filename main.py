@@ -40,9 +40,6 @@ from flask_login import UserMixin, login_user, LoginManager, login_required, cur
 from sqlalchemy.orm import relationship
 
 from post_processing import Cleaning_contour, Post_processing
-# from foot_lateral_model import foot_lateral_segmentation
-# from image_processing import Process
-# from kind_detection import Preprocessing
 
 load_dotenv() 
 
@@ -55,8 +52,8 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///posts.db'
 app.config['UPLOAD_FOLDER'] = 'static/image'
 
 # RunPod API 설정
-API_ENDPOINT = "https://api.runpod.ai/v2/9k550qnu83u0a1/runsync"
-API_KEY = "07SQGVMUUV7GMN6V4JC7GLEF7290ZA8T0BPT61GZ"
+API_ENDPOINT = os.getenv('API_ENDPOINT')
+API_KEY = os.getenv('API_KEY')
 
 count = 0
 image_number = 0
